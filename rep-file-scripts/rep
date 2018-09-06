@@ -1,0 +1,215 @@
+#! /usr/bin/perl
+
+use Getopt::Long;
+use File::Basename;
+
+sub print_usage
+{
+  my ($prog,@rest) = @_;
+  print <<"EOF";
+Usage: $prog templateFile.txt repFile1.rep [repFile2.rep [repFile3.rep...]]
+options:
+ -t tagfile.txt: tag with lines in tagfile instead of .auto-gen.1, .auto-gen.2, ...
+ -p STRING: string with project name. tag will be  STRING.auto-gen.1, STRING.auto-gen.2, ...
+ -v INT: verbose level
+ -q: quit
+ -d: debug
+ -b: batch mode. used by repGen.py
+ -i INT: start index. start tags at .auto-gen.\$((1 + i)), .auto-gen.\$((2 + i)), ...
+ -l: list files that would be removed by clean
+ -c: clean CARFULL, this is just a rm \*.auto-gen.\*
+EOF
+}
+
+$help = 0;
+$tag_file="";
+$proj_name="";
+$quiet=0;
+$verbose=1;
+$debug=0;
+$batch=0;
+$start_index=1;
+$list=0;
+$clean=0;
+
+
+$num=0;
+
+
+$result = GetOptions( "help"      => \$help
+                     ,"tagfile=s" => \$tag_file
+                     ,"project=s" => \$proj_name
+                     ,"verbose=i" => \$verbose
+                     ,"quiet"     => \$quiet
+                     ,"debug"     => \$debug
+                     ,"batch"     => \$batch
+                     ,"index=i"   => \$start_index
+                     ,"list"      => \$list
+                     ,"clean"     => \$clean
+                    );
+
+
+# handle short circuit options
+if( $help )
+{
+  print_usage $0;
+  exit;
+}
+elsif( $list )
+{
+  system("find ./ -maxdepth 1 -iname '*.auto-gen.*'");
+  exit;
+}
+elsif( $clean )
+{
+  system("find ./ -maxdepth 1 -iname '*.auto-gen.*' | xargs rm");
+  exit;
+}
+
+if( $quiet )
+{
+  $verbose = 0;
+}
+
+$template_file = shift;
+@rep_files     = @ARGV;
+
+# some quick validation
+unless( -e $template_file )
+{
+  print STDERR "template file '$template_file' does not appear to exist. exiting...\n";
+  exit;
+}
+foreach $file (@rep_files)
+{
+  unless( -e $file )
+  {
+    print STDERR ".rep file '$file' does not appear to exist. exiting...\n";
+    exit;
+  }
+}
+
+# read in all the .rep files
+
+%rep = ();
+%lengths = ();
+foreach $file (@rep_files)
+{
+  $key =  $file;
+  $key =~ s/\.rep$//;
+
+  open( FILE, $file ) or die("Unable to open '$file'");
+  my @lines = <FILE>;                             # read in ref file
+  @{$rep{$key}} = grep $_ =~ m/^\s*[^#]/, @lines; # but remove any comment lines
+  close( FILE );
+
+  chomp @{$rep{$key}};
+  $lengths{$file} = @{$rep{$key}};
+}
+# check to make sure all rep files are the same length
+$length = $lengths{ (keys %lengths)[0] };
+foreach $key (keys(%lengths))
+{
+  if( $lengths{$key} != $length )
+  {
+    print "one or more .rep files is not the same length as the others:\n";
+    print "length : filename\n\n";
+    foreach $key (keys %lengths)
+    {
+      print "$lengths{$key} : $key\n";
+    }
+    
+    exit;
+  }
+}
+
+
+if( $tag_file )
+{
+  open( FILE, $tag_file ) or die("Unable to open '$tag_file'");
+  @tags = <FILE>;
+  close( FILE );
+
+  chomp @tags;
+
+  if( @tags != $length )
+  {
+    print "tagfile '$tag_file' is not the same length as the .rep files:\n";
+    print "length : filename\n\n";
+    print @tags." : $tag_file\n";
+    foreach $key (keys %lengths)
+    {
+      print "$lengths{$key} : $key\n";
+    }
+    
+    exit;
+  }
+
+}
+
+if( not $batch and $verbose > 0 )
+{
+  print "patching $template_file\n";
+  print "applying files: @rep_files\n";
+  print "should create $length new files\n";
+}
+
+
+
+# read template file into memory
+open( FILE, $template_file ) or die("Unable to open '$template_file'");
+$template = join "", <FILE>;
+close( FILE );
+
+
+for( $i = 0; $i < $length; $i++)
+{
+  if( not $batch and $verbose > 1 )
+  {
+    print "\tworking on set $i...";
+  }
+
+  $tag = "auto-gen.";
+  if( @tags )      {$tag = $tag.$tags[$i];          }
+  else             {$tag = $tag.($start_index + $i);}
+  if( $proj_name ) {$tag = "$proj_name.$tag";       }
+  $output_file = basename($template_file).".$tag";
+  $output_file =~ s/^template\.//;
+
+
+  if( not $batch and $verbose > 2 )
+  {
+    print "\n\t\tgenerating '$output_file'\n";
+  }
+
+
+  $generated_file = $template;                                                 # get copy of template
+  $generated_file =~ s/%$_%/$rep{$_}->[$i]/g foreach (keys(%rep));      # replace all tags
+
+  open( FILE, ">$output_file" ) or die("Unable to open '$output_file' for writing");
+  print FILE $generated_file;
+  close( FILE );
+
+  if($batch)
+  {
+    print $output_file."\n";
+  }
+
+
+  if( not $batch and $verbose > 1 )
+  {
+    print "done\n";
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
