@@ -20,6 +20,7 @@ import numpy as np
 #nr = %nrl%
 
 runfile = 'test'
+filename = './%s-tbr' % runfile
 #property values
 Vx = 0.
 Vy = 0.
@@ -28,12 +29,12 @@ delta = 25.
 t = 10.
 mu = Vz+3*t
 alpha = 0.5*t
-nr = 10
+nr = 30
 n = int(nr*(nr+1)/2)
 
-# Create zero matrices for BdG and Zeeman components
+# Create zero matrix for BdG
+a = 1.
 bdg = np.zeros((4*n,4*n),dtype='complex')
-h_z = np.zeros((4*n,4*n),dtype='complex')
 imax = np.array([int((i+1)*(i+2)/2)-1 for i in range(nr)])
 
 # create the equilateral triangle lattice mesh
@@ -44,6 +45,8 @@ for i in range(nr):
     siteCoord[latticeCtr,0] = a*(j-i/2.)
     siteCoord[latticeCtr,1] = -i*a*np.sqrt(3)/2.
     latticeCtr+=1
+
+np.savetxt(filename+'-coordinates.txt', siteCoord, fmt='%1.32f')
 
 # fill in the bdg Hamiltonian without the pairing potential then add it's H.C.
 alpha1 = alpha*1.0j*np.exp(-1.0j*np.pi/6.)
@@ -58,15 +61,13 @@ for i in range(n):
   bdg[i+3*n,i+3*n] = -(-mu+6*t)/2.
   bdg[i,i+3*n]   =  delta
   bdg[i+2*n,i+n] = -delta
-  # keep the Zeeman terms separate for now
-  h_z[i,i+2*n]   =  (Vx-1.0j*Vy)
-  h_z[i+2*n,i]   =  (Vx+1.0j*Vy)
-  h_z[i+n,i+3*n] = -(Vx+1.0j*Vy)
-  h_z[i+3*n,i+n] = -(Vx-1.0j*Vy)
-  h_z[i,i]         =  Vz
-  h_z[i+n,i+n]     = -Vz
-  h_z[i+2*n,i+2*n] = -Vz
-  h_z[i+3*n,i+3*n] =  Vz
+  # Zeeman terms
+  bdg[i,i+2*n]   =  (Vx-1.0j*Vy)
+  bdg[i+n,i+3*n] = -(Vx+1.0j*Vy)
+  bdg[i,i]         =  Vz/2.
+  bdg[i+n,i+n]     = -Vz/2.
+  bdg[i+2*n,i+2*n] = -Vz/2.
+  bdg[i+3*n,i+3*n] =  Vz/2.
 
   # determines how many nearest neighbors for the current lattice point there are
   # this looks to the right, down and right, and down and left
@@ -114,21 +115,19 @@ for i in range(n):
       bdg[nnidx[j]+n,i+3*n] = -alpha2
 
 bdg += np.conj(np.transpose(bdg))
-bdg += h_z
+np.savetxt(filename+'-bdg.txt', bdg, fmt='%1.1f')
 energy, states = np.linalg.eigh(bdg)
 
 idx = energy.argsort()[::-1]
 energy = np.real(energy[idx])
 states = states[:,idx]
-states = np.real(np.multiply(states,np.conj(states)))
-filename = './data/%s-tbr' % runfile
-np.savetxt(filename+'-bdg.txt', bdg, fmt='%1.1f')
 np.savetxt(filename+'-energy.txt', energy, fmt='%1.8f')
-np.savetxt(filename+'-states.txt', states, fmt='%1.32f')
-np.savetxt(filename+'-coordinates.txt', siteCoord, fmt='%1.32f')
 
 # determine the edge energies and states
 energyBandGap = np.loadtxt(filename+'-energy-band-gaps.txt')
 idx = np.where(np.logical_and(energy>=energyBandGap[0],energy<=energyBandGap[1]))[0]
 np.savetxt(filename+'-edge-state-energy.txt', energy[idx],     fmt='%1.8f')
+
+states = np.real(np.multiply(states,np.conj(states)))
+np.savetxt(filename+'-states.txt', states, fmt='%1.32f')
 np.savetxt(filename+'-edge-state-states.txt', states[0:n,idx], fmt='%1.8f')
