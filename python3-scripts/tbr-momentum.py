@@ -8,24 +8,24 @@ from mpl_toolkits.mplot3d import axes3d
 
 #np.set_printoptions(threshold='nan')
 
-runfile = '%runfile%'
-#property values
-Vx = %vx%
-Vy = %vy%
-Vz = %vz%
-delta = %delta% 
-t = %t%
-mu = Vz+%mufctr%*t
-alpha = %alphafctr%*t
-#runfile = 'test'
+#runfile = '%runfile%'
 ##property values
-#Vx = 0.
-#Vy = 25.
-#Vz = 1000.
-#delta = 25.
-#t = 10.
-#mu = Vz+6*t
-#alpha = 0.25*t
+#Vx = %vx%
+#Vy = %vy%
+#Vz = %vz%
+#delta = %delta% 
+#t = %t%
+#mu = Vz+%mufctr%*t
+#alpha = %alphafctr%*t
+runfile = 'test'
+#property values
+Vx = 0.
+Vy = 20.
+Vz = 100.
+delta = 25.
+t = 10.
+mu = Vz+6*t
+alpha = 0.5*t
 a = 1.
 
 yslice = True
@@ -33,8 +33,8 @@ contour_flag = False
 plot_flag = True
 
 # dimensions for the graph
-nr = %nrm%
-#nr = 500
+#nr = %nrm%
+nr = 250
 d = 2*np.pi/(a*np.sqrt(3))
 ds = d/nr
 x = np.zeros(3*nr*(nr+1)+1)
@@ -92,33 +92,6 @@ band_gap[1] = np.min(E[2,:])
 #filename = './data/%s-tbr' % runfile
 filename = './%s-tbr' % runfile
 np.savetxt(filename+'-energy-band-gaps.txt', band_gap)
-
-# plot density of states
-for i in range(2):
-  nE = 150
-  Eumax = np.max(E[2*i+1,:])
-  Eumin = np.min(E[2*i+1,:])
-  Elmax = np.max(E[2*i,:])
-  Elmin = np.min(E[2*i,:])
-  dEu = np.abs(Eumax-Eumin)/(nE-1)
-  dEl = np.abs(Elmax-Elmin)/(nE-1)
-  Eaxis = np.array([Elmin + j*dEl for j in range(nE)])
-  Eaxis = np.append(Eaxis, np.array([Eumin+j*dEu for j in range(nE)]))
-  dos = np.zeros(np.size(Eaxis))
-  for j in range(nE-1):
-    idx = np.where(np.logical_and(E[2*i,:]<Eaxis[j+1],E[2*i,:]>Eaxis[j]))[0]
-    dos[j] = np.size(idx)
-  for j in range(nE-1):
-    idx = np.where(np.logical_and(E[2*i+1,:]<Eaxis[nE+j+1],E[2*i+1,:]>Eaxis[nE+j]))[0]
-    dos[nE+j+1] = np.size(idx)
-
-  #plt.xlabel('$\epsilon (t)$', fontsize=12)
-  #plt.ylabel('$g(\epsilon)/g_{max}$', fontsize=12)
-  #plt.xlim(Elmin,Eumax)
-  #plt.plot(Eaxis,dos)
-  #plt.show()
-  #plt.savefig('../../data/fig-dos-momentum.pdf')
-
 
 #plot energy band gap
 fig = plt.figure()

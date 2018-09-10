@@ -66,7 +66,7 @@ for i in xrange(n):
 
 # solve the eigen-value problem to calculate the energy and wavefunctions
 bdg = bdg +np.conj(np.transpose(bdg))
-energy, states = np.linalg.eig(bdg)
+energy, states = np.linalg.eigh(bdg)
 # normalize the eigenstates, Energies and Nomalize Eigenstates should all be real, typecast to real
 idx = energy.argsort()[::-1]
 energy = np.real(energy[idx])

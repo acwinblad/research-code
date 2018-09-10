@@ -24,12 +24,12 @@ filename = './%s-tbr' % runfile
 #property values
 Vx = 0.
 Vy = 0.
-Vz = 1000.
-delta = 25.
+Vz = 100.
+delta = 10.
 t = 10.
-mu = Vz+3*t
-alpha = 0.5*t
-nr = 30
+mu = Vz+6*t
+alpha = 1.00*t
+nr = 20
 n = int(nr*(nr+1)/2)
 
 # Create zero matrix for BdG
@@ -55,19 +55,16 @@ row = 0
 for i in range(n):
   # this is the current lattice site
   # I divide by 2 here because we will add the h.c. later which will double the diagonal values
-  bdg[i,i]         =  (-mu+6*t)/2.
-  bdg[i+n,i+n]     = -(-mu+6*t)/2.
-  bdg[i+2*n,i+2*n] =  (-mu+6*t)/2.
-  bdg[i+3*n,i+3*n] = -(-mu+6*t)/2.
+  bdg[i,i]         =  (-mu+6*t+Vz)/2.
+  bdg[i+n,i+n]     = -(-mu+6*t+Vz)/2.
+  bdg[i+2*n,i+2*n] =  (-mu+6*t-Vz)/2.
+  bdg[i+3*n,i+3*n] = -(-mu+6*t-Vz)/2.
+  # pairing terms
   bdg[i,i+3*n]   =  delta
   bdg[i+2*n,i+n] = -delta
-  # Zeeman terms
+  # in-plane Zeeman terms
   bdg[i,i+2*n]   =  (Vx-1.0j*Vy)
   bdg[i+n,i+3*n] = -(Vx+1.0j*Vy)
-  bdg[i,i]         =  Vz/2.
-  bdg[i+n,i+n]     = -Vz/2.
-  bdg[i+2*n,i+2*n] = -Vz/2.
-  bdg[i+3*n,i+3*n] =  Vz/2.
 
   # determines how many nearest neighbors for the current lattice point there are
   # this looks to the right, down and right, and down and left
@@ -116,7 +113,8 @@ for i in range(n):
 
 bdg += np.conj(np.transpose(bdg))
 np.savetxt(filename+'-bdg.txt', bdg, fmt='%1.1f')
-energy, states = np.linalg.eigh(bdg)
+energy, tmp = np.linalg.eigh(bdg)
+states = tmp[0:n,:]
 
 idx = energy.argsort()[::-1]
 energy = np.real(energy[idx])
