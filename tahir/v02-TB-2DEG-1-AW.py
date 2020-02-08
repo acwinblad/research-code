@@ -2,23 +2,24 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.special as sp
-np.set_printoptions(linewidth=np.inf, precision=6)
+np.set_printoptions(linewidth=np.inf, precision=4)
 
 # Define radius to be used and determine the dimensions of the Bloch matrices for each mode
-rc = 2
+rc = 10
 Ns = 2*rc+1
 
 # Determine the number of modes to look at
-mc = 2
+mc = 5
 Nn = 2*mc+1
 
 # initialize parameters
-ka = 0.01
-hw = 2.
+ka = 0.1
+hw = 2*np.pi
 
 # phi_0 will be a free variable and be used for a for loop potential?
-nphi = 10
-phi0 = np.linspace(-1,1,nphi)
+nphi = 100
+phimax = 10
+phi0 = np.linspace(-phimax,phimax,nphi)
 energy = np.zeros((Nn*Ns,nphi))
 
 for l in range(nphi):
@@ -44,55 +45,52 @@ for l in range(nphi):
 
   #print(Jd)
 
-  Ju = np.zeros(Nn)
   Jl = np.zeros(Nn)
 
   for i in range(Nn):
       n = mc - i
-      Ju[i] = -sp.jv(n,phi0[l])
       Jl[i] = -(-1)**n*sp.jv(n,phi0[l])
-
-  #print(Ju)
-  #print(Jl)
 
   Q = np.diag(Jd)
 
-  for i in range(Nn):
-      j = 3*i
-      Q[j,j+1] = Ju[i]
-      Q[j+1,j+2] = Ju[i]
-      Q[j+1,j] = Jl[i]
-      Q[j+2,j+1] = Jl[i]
+  for i in range(Nn*Ns-1):
+    ll = (i+1)%Ns
+    mm = i//Ns
+    if ll == 0:
+      Q[i+1,i] = 0
+    else:
+      Q[i+1,i] = Jl[mm]
 
-  #print(Q)
 
   # solve eigenvalue problem
-  energy[:,l] = np.linalg.eigvals(Q)
+  energy[:,l] = np.linalg.eigvalsh(Q)
 
   # print eigen-energies
-  #print(energy)
+print(energy)
 
 
 xaxis = np.array([-1, 1])
-plt.figure(figsize=(6,4))
+plt.figure(figsize=(4,4))
 plt.tick_params(
     axis='x',
     which='both',
-    bottom='off',
+    bottom='on',
     top='off',
-    labelbottom='off')
-plt.ylabel('$Energy$', fontsize=12)
+    labelbottom='on')
+plt.ylabel('$E(\phi_0)$', fontsize=12)
 plt.xlabel('$\phi_0$', fontsize=12)
-#plt.xlim(-10.2, 10.2)
-#plt.ylim(np.min(energy)-1, np.max(energy)+1)
-#plt.ylim(-6, 20)
+plt.xlim(phi0[0], phi0[-1])
+plt.ylim(np.min(energy),np.max(energy))
+#plt.ylim(-10,10)
 
 
-for i in range(nphi):
-  plt.plot(phi0, energy[i,:], '.', color = 'r', markersize = 1.8)
+for i in range(Nn*Ns):
+  plt.plot(phi0, energy[i,:], '.', color = 'g', markersize = 1)
+  #plt.plot(phi0, energy[i,:], color = 'b', markersize = .1)
+
+#for i in range(Nn*Ns):
+#  plt.plot(xaxis,[energy[i,:],energy[i,:]], 'g')
 
 plt.tight_layout()
-
-
 
 plt.show()
