@@ -21,13 +21,13 @@ y = np.zeros(3*nr*(nr+1)+1)
 
 # build up the hexagonal domain with triangles
 latticeCtr = 0
-for i in xrange(nr+1):
-  for j in xrange(nr+i+1):
+for i in range(nr+1):
+  for j in range(nr+i+1):
     x[latticeCtr] = -np.sqrt(3)*d/2.+np.sqrt(3)*i*ds/2.
     y[latticeCtr] = d/2.+i*ds/2.-j*ds
     latticeCtr+=1
-for i in xrange(nr):
-  for j in xrange(2*nr-i):
+for i in range(nr):
+  for j in range(2*nr-i):
     x[latticeCtr] = np.sqrt(3)*(i+1)*ds/2.
     y[latticeCtr] = d-(i+1)*ds/2.-j*ds
     latticeCtr+=1
@@ -48,10 +48,10 @@ np.savetxt('../../data/energy-band-gap-bounds.txt', np.column_stack([-Epmin,Epmi
 nE = 75
 dE = (np.max(Ep)-Epmin)/(nE-1)
 nE0 = int(Epmin/dE)
-E = np.array([i*dE for i in xrange(nE0)])
-E = np.append(E,np.array([i*dE+Epmin for i in xrange(nE)]))
+E = np.array([i*dE for i in range(nE0)])
+E = np.append(E,np.array([i*dE+Epmin for i in range(nE)]))
 gE = np.zeros(nE+nE0)
-for i in xrange(nE0+nE-1):
+for i in range(nE0+nE-1):
   idx = np.where(np.logical_and(Ep<E[i+1],Ep>E[i]))[0]
   gE[i+1] = np.size(idx)
 

@@ -25,7 +25,7 @@ mumin = 1e-1*mu
 a = 1.
 #nr = np.int(thop/np.abs(delta))
 nr = 10
-n = nr*(nr+1)/2
+n = nr*(nr+1)//2
 # slope of delta 
 
 bdg = np.zeros((2*n,2*n),dtype='complex')
@@ -35,17 +35,17 @@ siteCoord = np.zeros((n,2))
 ftr = np.zeros(n)
 dmu = -(mumin-mu)/(nr*a*np.sqrt(3)/2.)
 latticeCtr = 0
-for i in xrange(nr):
-  for j in xrange(i+1):
+for i in range(nr):
+  for j in range(i+1):
     siteCoord[latticeCtr,0] = a*(j-i/2.)
     siteCoord[latticeCtr,1] = -i*a*np.sqrt(3)/2.
     ftr[latticeCtr] = dmu*i+mumin
     latticeCtr += 1
-  print ftr[latticeCtr-1]
+  #print(ftr[latticeCtr-1])
 
 # fill in bdg hamiltonian 
-for i in xrange(n):
-  for j in xrange(n-i):
+for i in range(n):
+  for j in range(n-i):
     dx = siteCoord[i+j,0]-siteCoord[i,0]
     dy = siteCoord[i+j,1]-siteCoord[i,1]
     d = np.sqrt(dx**2 + dy**2)
@@ -77,6 +77,6 @@ idx = energy.argsort()[::-1]
 energy = np.real(energy[idx])
 states = states[:,idx]
 states = np.real(np.multiply(states,np.conj(states)))
-np.savetxt('../../data/bdg-energy-linear-inc-mu.txt', energy, fmt='%1.8f')
-np.savetxt('../../data/bdg-states-linear-inc-mu.txt', states, fmt='%1.32f')
-np.savetxt('../../data/bdg-coord-linear-inc-mu.txt', siteCoord, fmt='%1.32f')
+np.savetxt('../data/bdg-energy-linear-inc-mu.txt', energy, fmt='%1.8f')
+np.savetxt('../data/bdg-states-linear-inc-mu.txt', states, fmt='%1.32f')
+np.savetxt('../data/bdg-coord-linear-inc-mu.txt', siteCoord, fmt='%1.32f')

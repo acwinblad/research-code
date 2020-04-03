@@ -25,10 +25,11 @@ mc = 10
 Nm = 2*mc+1
 
 ka = 0.1
-hw = 0.1
-nphi = 20
-phimax = 1
-phi0 = np.linspace(-phimax,phimax,nphi)
+hw = 0.01
+nphi = 25
+phimax = 4
+#phi0 = np.linspace(-phimax,phimax,nphi)
+phi0 = np.linspace(0,phimax,nphi)
 energy = np.zeros((Nm*Ns,nphi))
 
 for k in range(nphi):
@@ -76,13 +77,13 @@ plt.tick_params(
 plt.ylabel('$E(\phi_0)$', fontsize=12)
 plt.xlabel('$\phi_0$', fontsize=12)
 #plt.xlim(phi0[0], phi0[-1])
-plt.xlim(-phimax, phimax)
+plt.xlim(phi0[0], phi0[-1])
 #plt.ylim(np.min(energy),np.max(energy))
-plt.ylim(-4, 0)
+#plt.ylim(-4, 0)
 
 
 for i in range(Nm*Ns):
-  plt.plot(phi0, energy[i,:], '.', color = 'b', markersize = 1.5)
+  plt.plot(phi0, energy[i,:], ',', color = 'b')
 #  plt.plot(phi0, energy[i,:], color = 'b', markersize = .1)
 
 #for i in range(Nm*Ns):
@@ -90,6 +91,27 @@ for i in range(Nm*Ns):
 
 plt.tight_layout()
 
+#plt.savefig('../../data/fig-spectral-flow.pdf')
 plt.show()
+plt.close()
 
+Emax = np.max(energy)
+Emin = np.min(energy)
+nE = 75
+dE = (Emax-Emin)/(nE-1)
+E = np.array([i*dE+Emin for i in range(nE)])
+gE = np.zeros((nphi,nE))
+for i in range(nphi):
+  for j in range(nE-1):
+    idx = np.where(np.logical_and(energy[:,i]>E[j],energy[:,i]<E[j+1]))[0]
+    gE[i,j+1] = np.size(idx)
 
+#print(gE)
+plt.figure(figsize=(10,10))
+Extent = [-phimax, phimax, Emin, Emax]
+#plt.colorbar()
+# include cmap='some_color' into the imshow function
+plt.imshow(gE.transpose(), origin='lower', extent=Extent, cmap='viridis', aspect=2/5)
+#plt.savefig('../../data/fig-dos-spectral-flow.pdf')
+plt.show()
+plt.close()
