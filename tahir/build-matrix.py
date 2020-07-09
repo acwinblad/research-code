@@ -18,10 +18,10 @@ def hjjn(_n, _i, _j, _phi0, _kj):
   else:
     return 0
 
-rc = 15
+rc = 1
 Ns = 2*rc+1
 
-mc = 10
+mc = 1
 Nm = 2*mc+1
 
 ka = 0.1

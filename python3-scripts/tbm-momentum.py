@@ -10,22 +10,22 @@ from mpl_toolkits.mplot3d import axes3d
 
 runfile = 'test'
 #property values
-Vx = 0.
-Vy = 100.
-Vz = 1000.
-delta = 50.
-t = 10.
-mu = Vz+3*t
+Vx = 0.0
+Vy = 10.0e0
+Vz = 1000.0
+delta = 25.0
+t = 10.0
+mu = Vz+6*t
 alpha = 0.5*t
-a = 1.
+a = 1
 
 yslice = False
-contour_flag = True
+contour_flag = False
 plot_flag = False
 
 # dimensions for the graph
 nr = 200
-d = 2*np.pi/(a*np.sqrt(3))
+d = (2*np.pi/a)/(np.sqrt(3)/2)
 ds = d/nr
 x = np.zeros(3*nr*(nr+1)+1)
 y = np.zeros(3*nr*(nr+1)+1)
@@ -34,13 +34,13 @@ y = np.zeros(3*nr*(nr+1)+1)
 latticeCtr = 0
 for i in range(nr+1):
   for j in range(nr+i+1):
-    x[latticeCtr] = -np.sqrt(3)*d/2.+np.sqrt(3)*i*ds/2.
-    y[latticeCtr] = d/2.+i*ds/2.-j*ds
+    x[latticeCtr] = -np.sqrt(3)*(d-i*ds)/2.
+    y[latticeCtr] = (d+(i-2*j)*ds)/2.
     latticeCtr+=1
 for i in range(nr):
   for j in range(2*nr-i):
     x[latticeCtr] = np.sqrt(3)*(i+1)*ds/2.
-    y[latticeCtr] = d-(i+1)*ds/2.-j*ds
+    y[latticeCtr] = (2*d-(i+1+2*j)*ds)/2.
     latticeCtr+=1
 triang = mtri.Triangulation(x,y)
 
@@ -48,13 +48,13 @@ triang = mtri.Triangulation(x,y)
 k1 = a*x
 k2 = -a*(x+np.sqrt(3)*y)/2.
 k3 = a*(x-np.sqrt(3)*y)/2.
-b1 = np.exp(-1.0j*np.pi/6.)
-b2 = np.exp(1.0j*np.pi/6.)
+b1 = np.exp(1.0j*np.pi/6.)
+b2 = np.exp(-1.0j*np.pi/6.)
 
 # build the BdG Hamiltonian components
 eps = -2.*t*(np.cos(k2) + np.cos(k3) + np.cos(k1)) -(mu-6*t)
 #delP =2*delta*1j*(-np.exp(1j*4*np.pi/3.)*np.sin(k2) + np.exp(1j*5*np.pi/3.)*np.sin(k3) + np.sin(k1))
-alpha1 = 2.*alpha*( -1.0j*np.sin(k1)+b1*np.sin(k2)+b2*np.sin(k3) )
+alpha1 = alpha*( -1.0j*np.sin(k1)+b1*np.sin(k2)+b2*np.sin(k3) )
 alpha2 = np.conj(alpha1)
 H_Z = np.matrix( [[Vz, Vx-1.0j*Vy, 0, 0],\
                   [Vx+1.0j*Vy, -Vz, 0, 0],\
@@ -79,8 +79,8 @@ for i in range(np.size(x)):
 band_gap = np.zeros(2)
 band_gap[0] = np.max(E[1,:])
 band_gap[1] = np.min(E[2,:])
-filename = '../../data/%s-tbr' % runfile
-np.savetxt(filename+'-energy-band-gaps.txt', band_gap)
+#filename = '../topological-superconductor-scripts/data' % runfile
+np.savetxt('../topological-superconductor-scripts/data/energy-band-gaps.txt', band_gap)
 
 # plot density of states
 for i in range(2):
@@ -122,27 +122,28 @@ elif contour_flag == True:
   triang = mtri.Triangulation(x,y)
   plt.axis('equal')
   plt.grid(True)
-  plt.tricontour(triang,E[2,:], 25, cmap='plasma')
+  plt.tricontourf(triang,E[2,:], 25, cmap='plasma')
+  #plt.tricontour(triang,E[2,:], 25, cmap='viridis')
   #plt.plot(x,np.sqrt(0.25**2-x**2))
 else:
-  skipcols = 2
+  skipcols = 20
   ax = fig.add_subplot(111, projection = '3d')
   triang = mtri.Triangulation(x[::skipcols],y[::skipcols])
   # plot energy in k-space
   ax.xaxis.label.set_size(12)
   ax.yaxis.label.set_size(12)
   ax.zaxis.label.set_size(12)
-  ax.set_xlim(-np.pi/a,np.pi/a)
+  ax.set_xlim(-2*np.pi/a,2*np.pi/a)
   ax.set_ylim(-d,d)
   ax.set_xlabel(r'$k_x\ (1/a)$')
   ax.set_ylabel(r'$k_y\ (1/a)$')
   ax.set_zlabel(r'$\epsilon\ (t)$')
   ax.view_init(elev=10., azim=-60)
   ax.view_init(elev=0., azim=-90)
-  ax.plot_trisurf(triang, E[0,::skipcols], cmap='viridis')
+#  ax.plot_trisurf(triang, E[0,::skipcols], cmap='viridis')
   ax.plot_trisurf(triang, E[1,::skipcols], cmap='viridis')
   ax.plot_trisurf(triang, E[2,::skipcols], cmap='viridis')
-  ax.plot_trisurf(triang, E[3,::skipcols], cmap='viridis')
+#  ax.plot_trisurf(triang, E[3,::skipcols], cmap='viridis')
 if plot_flag == True:
   plt.show()
 

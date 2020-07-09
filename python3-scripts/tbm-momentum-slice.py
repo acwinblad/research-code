@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 import numpy as np
@@ -10,12 +10,12 @@ from mpl_toolkits.mplot3d import axes3d
 
 runfile = 0
 # property values 
-Vx = 0.
-Vy = 10.
-Vz = 1000.
-delta = 50.
-t = 10.
-mu = Vz+3*t
+Vx = 0.0
+Vy = 0.0
+Vz = 1000.0
+delta = 25.0
+t = 10.0
+mu = Vz+6*t
 alpha = 0.5*t
 
 #runfile = sys.argv[1]
@@ -33,7 +33,7 @@ plot_flag = True
 # dimensions for the graph
 nr = 500
 #nr = np.int(sys.argv[9])
-d = 2*np.pi/(a*np.sqrt(3))
+d = 4*np.pi/(a*np.sqrt(3))
 ds = d/nr
 x = np.zeros(2*nr+1)
 y = np.zeros(2*nr+1)
@@ -41,7 +41,7 @@ y = np.zeros(2*nr+1)
 # build up the hexagonal domain with triangles
 latticeCtr = 0
 for i in range(2*nr+1):
-  x[latticeCtr] = -np.sqrt(3)*d/2.+np.sqrt(3)*i*ds/2.
+  x[latticeCtr] = -np.sqrt(3)*(d-i*ds)/2.
   y[latticeCtr] = 0
   latticeCtr+=1
 #triang = mtri.Triangulation(x,y)
@@ -50,13 +50,13 @@ for i in range(2*nr+1):
 k1 = a*x
 k2 = -a*(x+np.sqrt(3)*y)/2.
 k3 = a*(x-np.sqrt(3)*y)/2.
-b1 = np.exp(-1.0j*np.pi/6.)
-b2 = np.exp(1.0j*np.pi/6.)
+b1 = np.exp(1.0j*np.pi/6.)
+b2 = np.exp(-1.0j*np.pi/6.)
 
 # build the BdG Hamiltonian components
 eps = -2.*t*(np.cos(k2) + np.cos(k3) + np.cos(k1)) -(mu-6*t)
 #delP =2*delta*1j*(-np.exp(1j*4*np.pi/3.)*np.sin(k2) + np.exp(1j*5*np.pi/3.)*np.sin(k3) + np.sin(k1))
-alpha1 = 2.*alpha*( -1.0j*np.sin(k1)+b1*np.sin(k2)+b2*np.sin(k3) )
+alpha1 = alpha*( -1.0j*np.sin(k1)+b1*np.sin(k2)+b2*np.sin(k3) )
 alpha2 = np.conj(alpha1)
 H_Z = np.matrix( [[Vz, Vx-1.0j*Vy, 0, 0],\
                   [Vx+1.0j*Vy, -Vz, 0, 0],\
