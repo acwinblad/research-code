@@ -5,7 +5,7 @@
 # 09/07/2017
 #
 # This code solves the eigenvalue problem of the bdg matrix for a lattice p-wave equilateral triangle
-# We should get an array of energy values. We will then wrap the energy values into a 
+# We should get an array of energy values. We will then wrap the energy values into a
 # energy density histogram. yada yada yada
 #
 
@@ -42,7 +42,7 @@ for k in xrange(np.size(eta)):
       ftr[latticeCtr] = mu + eta[k]*np.abs(siteCoord[latticeCtr,1])
       latticeCtr += 1
 
-  # fill in bdg hamiltonian 
+  # fill in bdg hamiltonian
   for i in xrange(n):
     for j in xrange(n-i):
       dx = siteCoord[i+j,0]-siteCoord[i,0]
@@ -77,6 +77,6 @@ for k in xrange(np.size(eta)):
   # recall that the total number is 2*n and the lowest energies will be
   # n +- X in the array
   edgeEnergies[k,0:2*n] = energy
-  
 
-np.savetxt('../../data/bdg-spectral-flow-mu.txt', np.column_stack([mu+eta,edgeEnergies]), fmt='%1.8f')
+
+np.savetxt('./data/bdg-spectral-flow-mu.txt', np.column_stack([mu+eta,edgeEnergies]), fmt='%1.8f')

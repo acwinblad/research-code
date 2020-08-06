@@ -18,7 +18,7 @@ def hjjn(_n, _i, _j, _phi0, _kj, _kya):
   else:
     return 0
 
-pointsFlag = True
+pointsFlag = False
 dosFlag = False
 
 # variable values
@@ -27,7 +27,7 @@ mc = 10
 Nm = 2*mc+1
 
 # rc [10-15]
-rc = 20
+rc = 15
 Ns = 2*rc+1
 
 # static values
@@ -36,11 +36,13 @@ kyMax = 0.005*np.pi
 ky_a = np.linspace(0,kyMax,nky)
 ka = 0.1
 hw = 0.1
-nphi = 50
-phimax = 0.02
+nphi = 500
+phimin = -0.8
+phimax = 0.8
 #phi0 = np.linspace(-phimax,phimax,nphi)
-phi0 = np.linspace(0,phimax,nphi)
-energy = np.zeros((Nm*Ns,nphi))
+#phi0 = np.linspace(phimin, phimax, nphi)
+phi0 = np.array([(i/nphi)**(1/2) for i in range(nphi)])* phimax
+energy = np.zeros( (Nm*Ns, nphi) )
 
 for l in range(nky):
   for k in range(nphi):
@@ -76,7 +78,12 @@ for l in range(nky):
     #print(Qmn[0*Ns:3*Ns,0*Ns:3*Ns])
 
     # eigenvalue for k_y
-    energy[:,k] = np.linalg.eigvalsh(Qmn)
+    energy[:,k], states = np.linalg.eigh(Qmn)
+    #idx = energy[:,k].argsort()[::-1]
+    #energy[:,k] = energy[idx,k]
+    #states = states[:, idx]
+    #states = np.real(np.multiply(states, np.conj(states)))
+    np.savetxt('./data/eigenstate-phi-%03i.txt' % (k), states[:,:], fmt = '%1.8f')
 
   # eigenvalue as a function of k_y
   if l == 0:
@@ -84,4 +91,5 @@ for l in range(nky):
   else:
     eng_k = np.vstack((eng_k,energy))
 
+np.savetxt('./data/config-floquet.txt', [rc, mc, phimin, phimax, nphi])
 np.savetxt('./data/eng-matrix.txt', eng_k, fmt='%1.8f')

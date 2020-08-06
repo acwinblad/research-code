@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 
 #load in eigen-energy matrix
-energy = np.loadtxt('../data/bdg-spectral-flow-mu.txt')
+energy = np.loadtxt('./data/bdg-spectral-flow-mu.txt')
 nmu = np.size(energy[:,0])/2
 nbins = 60
 ggE = np.zeros((nbins,nmu))
