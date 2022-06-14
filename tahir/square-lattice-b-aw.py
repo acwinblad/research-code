@@ -9,7 +9,7 @@ rc = 10
 ns = 2*rc+1
 
 ka = 0.1
-phimin = 1e-4
+phimin = 0.0
 phimax = 0.001
 nphi = 250
 phi = np.linspace(phimin, phimax, nphi)
@@ -21,6 +21,7 @@ for n, phi0 in enumerate(phi):
   for i in range(ns):
     hn[i] = hami(i, phi0, ka)
 
+  print(hn)
   energy[:,n] = np.linalg.eigvalsh(np.diag(hn))
 
 np.savetxt('./config-landau-levels.txt', [phimin, phimax, nphi])

@@ -26,7 +26,7 @@ def hjjn(_n, _i, _j, _phi0, _kj):
 rc = 10
 Ns = 2*rc+1
 
-mc = 1
+mc = 0
 Nm = 2*mc+1
 
 ka = 0.1
@@ -57,7 +57,7 @@ for k in range(nphi):
   for i in range(Nm):
     for j in range(Nm-i):
       midx = mc-j
-      r1 = (i+j)*Ns 
+      r1 = (i+j)*Ns
       r2 = (i+j+1)*Ns
       c1 = j*Ns
       c2 = (j+1)*Ns

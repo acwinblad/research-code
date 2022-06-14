@@ -3,9 +3,8 @@
 # bdg solver lattice p-wave triangle
 # Created by: Aidan Winblad
 # 09/07/2017
-#
-# This code solves the eigenvalue problem of the bdg matrix for a lattice p-wave equilateral triangle
-# We should get an array of energy values. We will then wrap the energy values into a 
+# # This code solves the eigenvalue problem of the bdg matrix for a lattice p-wave equilateral triangle
+# We should get an array of energy values. We will then wrap the energy values into a
 # energy density histogram. yada yada yada
 #
 
@@ -25,26 +24,26 @@ def plot_individual_comparison(_idx, _triang, _energy, _states, _n):
     plt.figure()
     plt.xlabel('$x\ (a)$', fontsize=12)
     plt.ylabel('$y\ (a)$', fontsize=12)
-    plt.tricontourf(_triang, _states[0:_n,i], v, cmap='viridis', vmin=0, vmaX=vmx) 
+    plt.tricontourf(_triang, _states[0:_n,i], v, cmap='viridis', vmin=0, vmaX=vmx)
     clb = plt.colorbar(format='%1.4f')
     clb.ax.set_ylabel('$\|\Psi\|^2$',rotation=0,labelpad=15, fontsize=12)
+    plt.title('%1.8e' % (_energy[i]))
     filename = '../../data/fig-wavefunction-energy-%02d.pdf' % (_n-1-i)
     plt.savefig(filename)
     plt.close()
 
 def plot_individual(_idx, _triang, _energy, _states, _n):
 
-  for i in _idx:
-    # initialize plotting terms
+  for i in _idx: # initialize plotting terms
     vmx = np.max(_states[0:_n,i])
     v = np.linspace(0,vmx,19)
     plt.figure()
     plt.xlabel('$x\ (a)$', fontsize=12)
     plt.ylabel('$y\ (a)$', fontsize=12)
-    plt.tricontourf(_triang, _states[0:_n,i], v, cmap='viridis', vmin=0, vmax=vmx) 
+    plt.tricontourf(_triang, _states[0:_n,i], v, cmap='viridis', vmin=0, vmax=vmx)
     clb = plt.colorbar(format='%1.4f')
     clb.ax.set_ylabel('$\|\Psi\|^2$',rotation=0,labelpad=15, fontsize=12)
-    
+
     filename = '../../data/fig-wavefunction-energy-%02d.pdf' % (_n-1-i)
     plt.savefig(filename)
     plt.close()
@@ -59,12 +58,12 @@ def plot_subgroup(_idx, _triang, _energy, _states, _n, _name):
   f.subplots_adjust(left=0.125,right=0.75)
   i=0
   for ax in axes.flat:
-    im =  ax.tricontourf(_triang, _states[0:_n,_idx[i]], v, cmap='viridis', vmin=0, vmax=vmx) 
+    im =  ax.tricontourf(_triang, _states[0:_n,_idx[i]], v, cmap='viridis', vmin=0, vmax=vmx)
     ax.set(adjustable='box-forced',aspect='equal')
     i+=1
   for j, ax in enumerate(axes.flat):
     ax.text(0.1, .9, string.ascii_uppercase[j], transform=ax.transAxes, size=12, weight='bold')
-  
+
   cbar_ax = f.add_axes([0.775, 0.12, 0.03, 0.75])
   clb = f.colorbar(im, cax=cbar_ax,format='%1.4f')
   clb.ax.set_ylabel('$\|\Psi\|^2$',rotation=0,labelpad=15, fontsize=12)
@@ -82,7 +81,7 @@ energy = np.loadtxt('../../data/bdg-energy-triangle.txt')
 states = np.loadtxt('../../data/bdg-states-triangle.txt')
 
 idxuser = np.array([n,n-5,n-10,n-15])
-plot_edge_states = False
+plot_edge_states = True
 plot_bulk        = False
 plot_group       = False
 

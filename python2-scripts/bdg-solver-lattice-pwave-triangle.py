@@ -5,7 +5,7 @@
 # 09/07/2017
 #
 # This code solves the eigenvalue problem of the bdg matrix for a lattice p-wave equilateral triangle
-# We should get an array of energy values. We will then wrap the energy values into a 
+# We should get an array of energy values. We will then wrap the energy values into a
 # energy density histogram. yada yada yada
 #
 
@@ -37,7 +37,7 @@ for i in xrange(nr):
     siteCoord[latticeCtr,1] = -i*a*np.sqrt(3)/2.
     latticeCtr += 1
 
-# fill in bdg hamiltonian 
+# fill in bdg hamiltonian
 for i in xrange(n):
   for j in xrange(n-i):
     dx = siteCoord[i+j,0]-siteCoord[i,0]
@@ -52,6 +52,7 @@ for i in xrange(n):
       phaseAngle = np.arctan(dy/dx)
       if dx<0:
         phaseAngle+= np.pi
+      phaseAngle=0
       #print "phase angle", phaseAngle
       bdg[i+j,i] = -thop
       bdg[i,i+j] = -thop

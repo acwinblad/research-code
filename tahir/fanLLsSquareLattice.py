@@ -53,7 +53,7 @@ for k in range(nphi):
   for i in range(Nm):
     for j in range(Nm-i):
       midx = mc-j
-      r1 = (i+j)*Ns 
+      r1 = (i+j)*Ns
       r2 = (i+j+1)*Ns
       c1 = j*Ns
       c2 = (j+1)*Ns
