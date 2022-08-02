@@ -8,14 +8,14 @@ import glob
 
 np.set_printoptions(linewidth=np.inf, precision=2)
 
-def hjjn(_n, _i, _j, _phi0, _kj):
+def hjjn(_t, _n, _i, _j, _phi0, _kj):
   cs = np.cos(_kj)
   if _i == _j:
-    return -( sp.jv( _n, _phi0*cs )+sp.jv( _n, -_phi0*cs ) ) * np.exp( 1.0j*_n*np.pi/2 )
+    return -_t*( sp.jv( _n, _phi0*cs )+sp.jv( _n, -_phi0*cs ) ) * np.exp( 1.0j*_n*np.pi/2 )
   elif _i+1 == _j:
-    return -sp.jv( _n,_phi0 )
+    return -_t*sp.jv( _n,_phi0 )
   elif _i-1 == _j:
-    return -(-1)**_n*sp.jv( _n,_phi0 )
+    return -_t*(-1)**_n*sp.jv( _n,_phi0 )
   else:
     return 0
 
@@ -26,22 +26,40 @@ for f in files:
 
 # variable values
 # mc [5-10]
-mc = 10
+mc = 5
 Nm = 2*mc+1
 
 # rc [10-20]
-rc = 20
+rc = 10
 Ns = 2*rc+1
 
-# static values
-ka = 0.1
-hw = 40.1
+
+# constants
+hbar = 6.582E-16 # 6.582 * 10^-16 eV*s
+c = 2.998E8 # 2.998 * 10^8 m/s
+m_e = 0.51E6 / c**2 # 0.51 MeV/c^2
+ec = 1.602E-19 # C
 
 # incoming light intensity
+hw = 191E-3 # meV
+ka = 0.1
+a = 100E-9 # nm
+t = hbar**2 / (2 * a**2 * m_e)
+print(t)
+# Electric field in V/m
+E = 5E7
+alpha = 2 * t * ka**2 / hw
+#alpha = 4*ka**2/(2*np.pi*hw)
 nphi = 100
-alpha = 4*ka**2/(2*np.pi*hw)
-phimin = np.sqrt(0.0/alpha)
-phimax = np.sqrt(5*10e-5/alpha)
+#phimin = np.sqrt(0.0/alpha)
+#phimax = np.sqrt(5*10e-5/alpha)
+phimin = 0
+# Don't need electron charge here since it cancels with the e in eV
+phimax = E*a/hw
+print(alpha)
+print(phimax)
+print(alpha*phimax**2)
+# since the magnetic flux, f^S, is proportional to phi squared we make the spacing of phi on square root intervals, later we square the axis to get a uniform range.
 phi0 = np.array( [ (phimin + i/nphi)**(1/2) for i in range(nphi) ] ) * phimax
 
 # Calculating Floquet data set
@@ -54,7 +72,7 @@ for k in range(nphi):
     for i in range(Ns):
       for j in range(Ns):
         kj = (j-rc)*ka
-        Hn[n,i,j] = hjjn( -n, i, j, phi0[k], kj )
+        Hn[n,i,j] = hjjn(t, -n, i, j, phi0[k], kj )
 
 # build hermitian matrix
   Qmn = np.zeros( [Nm*Ns, Nm*Ns],"complex" )

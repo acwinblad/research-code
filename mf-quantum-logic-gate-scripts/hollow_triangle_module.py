@@ -209,8 +209,11 @@ def plot_hollow_triangle_wavefunction(_a, _width, _innertri, _coords, _triang, _
     axins.tricontourf(triang, _states[0:n,i]+_states[n:2*n,i], cmap='Blues')
     axins.triplot(triang, '.k', markersize=1)
     axins.set_xlim(np.min(x),np.min(x)+_width+_a/2)
-    if(_width != 1):
+    if(_width > 1):
       axins.set_ylim(0, np.sqrt(3)/2 * _width)
+    elif(_width == 0):
+      axins.set_xlim(np.min(x),np.min(x)+_a)
+      axins.set_ylim(0, np.sqrt(3)/2 * 0.75*_a)
     else:
       axins.set_ylim(0, np.sqrt(3)/2 * _width * 1.25)
 
@@ -222,8 +225,11 @@ def plot_hollow_triangle_wavefunction(_a, _width, _innertri, _coords, _triang, _
     axins2.tricontourf(triang, _states[0:n,i]+_states[n:2*n,i], cmap='Blues')
     axins2.triplot(triang, '.k', markersize=1)
     axins2.set_xlim(np.max(x)-_width-_a/2,np.max(x))
-    if(_width != 1):
+    if(_width > 1):
       axins2.set_ylim(0, np.sqrt(3)/2 * _width)
+    elif(_width == 0):
+      axins2.set_xlim(np.max(x)-_a,np.max(x))
+      axins2.set_ylim(0, np.sqrt(3)/2 * 0.75*_a)
     else:
       axins2.set_ylim(0, np.sqrt(3)/2 * _width * 1.25)
     axins2.set_xticklabels([])
@@ -246,10 +252,13 @@ def plot_hollow_triangle_spectral_flow(_mu, _outernr, _B0, _width, _Bmax, _nE, _
   plt.ylim(ymin, ymax)
   plt.xlabel('$B$', fontsize=12)
   plt.ylabel('Energy (t)', fontsize=12)
-  plt.title('$n_r$ = %i, $w_{edge}$ = %i, $\mu$ = %1.4f' % (_outernr, _width, _mu))
+  if(_width!=0):
+    plt.title('$n_r$ = %i, $w_{edge}$ = %i, $\mu$ = %1.4f' % (_outernr, _width, _mu))
+  else:
+    plt.title('$n_r$ = %i, $\mu$ = %1.4f' % (_outernr, _mu))
   plt.axvline(x=_B0, color='black', ls='--')
   for i in range(2*_nE):
-    plt.plot(_bvals,_evb[i,:])
+    plt.plot(_bvals,_evb[i,:], 'b')
   #plt.show()
   plt.savefig(_filepath+'spectral-flow.pdf')
   plt.close()

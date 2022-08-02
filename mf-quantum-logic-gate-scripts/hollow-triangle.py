@@ -18,7 +18,7 @@ t = 1
 delta = t
 muarr = np.linspace(-6*t,6*t,1001)
 mu = muarr[235]
-mu = -2.53*t
+mu = t*0
 a = 1
 outernr = 25
 outerlen = a*(outernr-1)
@@ -38,7 +38,7 @@ else:
 
 # The inner boundary is dependant on the width we want and bounded by the outer boundary.
 # Define the width first then we can determine the the number of rows of the inner boundary.
-width = 4
+width = 0
 width *= a
 yp = np.sqrt(3)/2
 # Build the hollow triangle lattice

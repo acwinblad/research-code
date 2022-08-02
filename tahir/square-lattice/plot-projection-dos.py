@@ -40,8 +40,8 @@ for i, statefilename in enumerate(stateslist):
 # calculate a weighted/projected density of states as a function of phi
 Emax = np.max(energy)
 Emin = np.min(energy)
-Emax = -2
-Emin = -4.0
+Emax = 0
+Emin = -5
 nE = 200
 dE = (Emax-Emin)/(nE-1)
 E = np.array([i*dE+Emin for i in range(nE)])
