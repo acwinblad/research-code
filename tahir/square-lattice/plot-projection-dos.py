@@ -9,13 +9,13 @@ import glob
 config = np.loadtxt('./data/config-floquet.txt')
 rc = int(config[0])
 mc = int(config[1])
-alpha = float(config[2])
-phimin = config[3]
-phimax = config[4]
-nphi = int(config[5])
+t = float(config[2])
+alpha = float(config[3])
+phimin = config[4]
+phimax = config[5]
+nphi = int(config[6])
 #phi = np.array([(i/nphi)**(1/2) for i in range(nphi)])*phimax
 strnphi = str(nphi)
-
 ns = 2*rc+1
 nm = 2*mc+1
 m0 = (mc-0)*ns
@@ -40,8 +40,8 @@ for i, statefilename in enumerate(stateslist):
 # calculate a weighted/projected density of states as a function of phi
 Emax = np.max(energy)
 Emin = np.min(energy)
-Emax = 0
-Emin = -5
+Emax = -3.0*t
+Emin = -4*t
 nE = 200
 dE = (Emax-Emin)/(nE-1)
 E = np.array([i*dE+Emin for i in range(nE)])

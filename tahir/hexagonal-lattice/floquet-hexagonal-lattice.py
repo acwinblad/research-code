@@ -27,16 +27,30 @@ rc = 15
 Ns = 2*rc+1
 rarr = np.arange(0, Ns, 1) - rc
 
-# static values
-ka = 0.1
-hw = 40.
+# constants
+hbar = 6.582E-16 # 6.582 * 10^-16 eV*s
+c = 2.998E* # 2.998 * 10^8 m/s
+m_e = 0.51E6 / c**2 # 0.51 MeV/c^2
+ec = 1.602E-19 # C
 
-# incoming light intensity
-nphi = 100
+# incoming light
+hw = 191E-3 # meV
+ka = 0.1
+a = 100E-9 # nm
+t = hbar**2 / (2 * a**2 * m_e)
+
+E = 2E8 # V/m
 alpha = ka / (8*np.pi*hw**2)
+nphi = 100
 phimin = 0.0
 phimax = 0.15 * 1e-1
 phiE = np.array( [ (phimin + i/nphi)**(1/3) for i in range(nphi) ] ) * phimax
+
+print(t)
+print(alpha)
+print(phimax)
+print(alpha*phimax**2)
+print('B =', )
 
 jjdifx = np.array([np.sqrt(3)/2, 0, np.sqrt(3)/2])
 jjavgx = np.array([np.sqrt(3)/4, np.sqrt(3)/2, 3*np.sqrt(3)/4])

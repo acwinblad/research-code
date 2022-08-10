@@ -26,41 +26,47 @@ for f in files:
 
 # variable values
 # mc [5-10]
-mc = 5
+mc = 2
 Nm = 2*mc+1
 
 # rc [10-20]
-rc = 10
+rc = 75
 Ns = 2*rc+1
 
 
 # constants
 hbar = 6.582E-16 # 6.582 * 10^-16 eV*s
 c = 2.998E8 # 2.998 * 10^8 m/s
-m_e = 0.51E6 / c**2 # 0.51 MeV/c^2
+m_e = 0.51E6 / c**2 # mass of electron 0.51 Mev/c^2
+#m = 0.067 * m_e # GaAs/AlGaAs-> m* = 0.067m_e = 0.067 * 0.51 MeV/c^2
+#m = 0.20 * m_e # GaN/AlGaN-> m* = 0.20m_e = 0.20 * 0.51 MeV/c^2
+m = 2.5 * m_e # LaAlo3/SrTio3 -> m* = (2.5,3)m_e = 2.5 * 0.51 MeV/c^2
+#m = m_e
 ec = 1.602E-19 # C
 
 # incoming light intensity
 hw = 191E-3 # meV
-ka = 0.1
-a = 100E-9 # nm
-t = hbar**2 / (2 * a**2 * m_e)
-print(t)
-# Electric field in V/m
-E = 5E7
+ka = 0.01
+#a = 0.56E-9 # GaAs/AlGaAs-> a = 0.56nm
+#a = 0.3186E-9 # GaN/AlGaN-> a = 0.3186nm
+a = 0.38E-9 # LaAlo3/SrTio3 -> a = 0.3186nm
+#a = 10E-9
+t = hbar**2 / (2 * a**2 * m)
+
+E = 4E8 # V/m
 alpha = 2 * t * ka**2 / hw
-#alpha = 4*ka**2/(2*np.pi*hw)
-nphi = 100
-#phimin = np.sqrt(0.0/alpha)
-#phimax = np.sqrt(5*10e-5/alpha)
+nphi = 50
 phimin = 0
 # Don't need electron charge here since it cancels with the e in eV
 phimax = E*a/hw
-print(alpha)
-print(phimax)
-print(alpha*phimax**2)
 # since the magnetic flux, f^S, is proportional to phi squared we make the spacing of phi on square root intervals, later we square the axis to get a uniform range.
 phi0 = np.array( [ (phimin + i/nphi)**(1/2) for i in range(nphi) ] ) * phimax
+
+print('t= ', t)
+print('alpha= ', alpha)
+print('phi= ', phimax)
+print('phi_b= ', alpha*phimax**2)
+print('B=', 2*t*hbar * ka**2 *phimax**2 / (hw*a**2))
 
 # Calculating Floquet data set
 energy = np.zeros( (Nm*Ns, nphi) )
@@ -99,4 +105,4 @@ for k in range(nphi):
 np.savetxt('./data/eng-matrix.txt', energy, fmt='%1.8f')
 
 # save configuration file for plotting scripts
-np.savetxt('./data/config-floquet.txt', [rc, mc, alpha, phimin, phimax, nphi])
+np.savetxt('./data/config-floquet.txt', [rc, mc, t, alpha, phimin, phimax, nphi])
