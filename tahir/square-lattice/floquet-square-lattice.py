@@ -26,47 +26,62 @@ for f in files:
 
 # variable values
 # mc [5-10]
-mc = 2
+mc = 3
 Nm = 2*mc+1
 
 # rc [10-20]
-rc = 75
+rc = 20
 Ns = 2*rc+1
 
 
 # constants
 hbar = 6.582E-16 # 6.582 * 10^-16 eV*s
 c = 2.998E8 # 2.998 * 10^8 m/s
-m_e = 0.51E6 / c**2 # mass of electron 0.51 Mev/c^2
-#m = 0.067 * m_e # GaAs/AlGaAs-> m* = 0.067m_e = 0.067 * 0.51 MeV/c^2
-#m = 0.20 * m_e # GaN/AlGaN-> m* = 0.20m_e = 0.20 * 0.51 MeV/c^2
-m = 2.5 * m_e # LaAlo3/SrTio3 -> m* = (2.5,3)m_e = 2.5 * 0.51 MeV/c^2
-#m = m_e
 ec = 1.602E-19 # C
 
-# incoming light intensity
-hw = 191E-3 # meV
-ka = 0.01
-#a = 0.56E-9 # GaAs/AlGaAs-> a = 0.56nm
-#a = 0.3186E-9 # GaN/AlGaN-> a = 0.3186nm
-a = 0.38E-9 # LaAlo3/SrTio3 -> a = 0.3186nm
-#a = 10E-9
-t = hbar**2 / (2 * a**2 * m)
+# effective mass of electron
+m_e = 0.51E6 / c**2 # mass of electron 0.51 Mev/c^2
+m = 0.067 * m_e # GaAs/AlGaAs-> m* = 0.067m_e = 0.067 * 0.51 MeV/c^2
+#m = 0.20 * m_e # GaN/AlGaN-> m* = 0.20m_e = 0.20 * 0.51 MeV/c^2
+#m = 2.5 * m_e # LaAlo3/SrTio3 -> m* = (2.5,3)m_e = 2.5 * 0.51 MeV/c^2
+#m = 1.0 * m_e
 
-E = 4E8 # V/m
-alpha = 2 * t * ka**2 / hw
-nphi = 50
-phimin = 0
+# incoming light energy and wavenumber
+hw = 191E-3 # meV
+k = hw / (hbar * c)
+print('K =', k)
+
+# lattice constants
+a = 0.56E-9 # GaAs/AlGaAs-> a = 0.56nm
+#a = 0.3186E-9 # GaN/AlGaN-> a = 0.3186nm
+#a = 0.38E-9 # LaAlo3/SrTio3 -> a = 0.3186nm
+#a = 1.0E-9
+ka = k*a
+#ka = 5.00
+
+# hopping parameter in eV
+t = hbar**2 / (2 * a**2 * m)
+#t = 2.0
+#m = hbar**2 / (2 * t * a**2)
+print('m =', m)
+
+# Electric field and phi_0
+E = 1E9 # V/m
 # Don't need electron charge here since it cancels with the e in eV
 phimax = E*a/hw
+B = ( k**2 * hbar**3 * phimax**2 ) / ( m * a**2 * hw )
+alpha = ( hbar**2 * k**2 ) / ( m * hw )
+nphi = 50
+phimin = 0
 # since the magnetic flux, f^S, is proportional to phi squared we make the spacing of phi on square root intervals, later we square the axis to get a uniform range.
 phi0 = np.array( [ (phimin + i/nphi)**(1/2) for i in range(nphi) ] ) * phimax
 
+print('ka= ', ka)
 print('t= ', t)
+print('B= ', B)
 print('alpha= ', alpha)
 print('phi= ', phimax)
 print('phi_b= ', alpha*phimax**2)
-print('B=', 2*t*hbar * ka**2 *phimax**2 / (hw*a**2))
 
 # Calculating Floquet data set
 energy = np.zeros( (Nm*Ns, nphi) )

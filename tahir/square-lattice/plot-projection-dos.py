@@ -28,7 +28,7 @@ stateslist = sorted( glob.glob( './data/eigenstate-phi-*.txt') )
 # calculate weight/projection on 0th order Block
 weight = np.zeros( (nphi, ns*nm) )
 for i, statefilename in enumerate(stateslist):
-  states = np.loadtxt( statefilename, dtype=complex, skiprows=m0, max_rows=mf )
+  states = np.loadtxt( statefilename, dtype=complex, skiprows=m0, max_rows=ns )
   weight[i,:] = np.diag( np.real( np.matmul( states.conj().T, states ) ) , k=0 )
 
 #wavg = np.average(weight)
@@ -40,8 +40,8 @@ for i, statefilename in enumerate(stateslist):
 # calculate a weighted/projected density of states as a function of phi
 Emax = np.max(energy)
 Emin = np.min(energy)
-Emax = -3.0*t
-Emin = -4*t
+Emax = +1.0*t
+Emin = -4.0*t
 nE = 200
 dE = (Emax-Emin)/(nE-1)
 E = np.array([i*dE+Emin for i in range(nE)])
@@ -74,9 +74,9 @@ ax.set_yticklabels(['%1.2f' % val for val in ylabelarray])
 ax.set_ylabel('$E(\phi_E)$')
 
 # plot and save figures
-img = ax.imshow( ( np.flipud(wE.transpose()) )**(1.0), interpolation='spline16', cmap='Blues', extent=[-1,1,-1,1])
+img = ax.imshow( ( np.flipud(wE.transpose()) )**(0.5), interpolation='spline16', cmap='Blues', extent=[-1,1,-1,1])
 plt.savefig('./figures/dos-projection.pdf', bbox_inches='tight')
 
 # normal dos
-img = ax.imshow( (np.flipud(gE.transpose()) )**2, interpolation='spline16', cmap='Blues', extent=[-1,1,-1,1])
+img = ax.imshow( (np.flipud(gE.transpose()) )**1, interpolation='spline16', cmap='Blues', extent=[-1,1,-1,1])
 plt.savefig('./figures/dos-full.pdf', bbox_inches='tight')
