@@ -9,10 +9,11 @@ import glob
 config = np.loadtxt('./data/config-floquet.txt')
 rc = int(config[0])
 mc = int(config[1])
-alpha = float(config[2])
-phimin = config[3]
-phimax = config[4]
-nphi = int(config[5])
+t = float(config[2])
+alpha = float(config[3])
+phimin = config[4]
+phimax = config[5]
+nphi = int(config[6])
 #phi = np.array([(i/nphi)**(1/2) for i in range(nphi)])*phimax
 strnphi = str(nphi)
 
@@ -28,7 +29,7 @@ stateslist = sorted( glob.glob( './data/eigenstate-phi-*.txt') )
 # calculate weight/projection on 0th order Block
 weight = np.zeros( (nphi, 4*ns*nm) )
 for i, statefilename in enumerate(stateslist):
-  states = np.loadtxt( statefilename, dtype=complex, skiprows=m0, max_rows=mf )
+  states = np.loadtxt( statefilename, dtype=complex, skiprows=m0, max_rows=ns*4 )
   weight[i,:] = np.diag( np.real( np.matmul( states.conj().T, states ) ) , k=0 )
 
 #wavg = np.average(weight)
@@ -40,9 +41,9 @@ for i, statefilename in enumerate(stateslist):
 # calculate a weighted/projected density of states as a function of phi
 Emax = np.max(energy)
 Emin = np.min(energy)
-Emax = 2.0
-Emin = -0.01
-nE = 200
+Emax = +2.0*t
+Emin = -2.0*t
+nE = 300
 dE = (Emax-Emin)/(nE-1)
 E = np.array([i*dE+Emin for i in range(nE)])
 
@@ -62,7 +63,7 @@ fig, ax = plt.subplots(1,1)
 # set x-axis
 xticks = np.linspace(-1,1,5, endpoint=True)
 #xlabelarray = np.linspace( alpha * phimin**3, alpha * phimax**3, 5, endpoint=True)
-xlabelarray = np.linspace( phimin, phimax, 5, endpoint=True)
+xlabelarray = np.linspace( phimin, phimax**3, 5, endpoint=True)
 ax.set_xticks(xticks)
 ax.set_xticklabels(['%1.2e' % val for val in xlabelarray])
 #ax.set_xlabel('$\phi_{B_{eff}} = %1.6f\phi_E^3$' % alpha)
@@ -76,12 +77,12 @@ ax.set_yticklabels(['%1.2f' % val for val in ylabelarray])
 ax.set_ylabel('$E(\phi_E)$')
 
 # plot and save figures
-img = ax.imshow( ( np.flipud(wE.transpose()) )**(1.0), interpolation='spline16', cmap='Blues', extent=[-1,1,-1,1])
+img = ax.imshow( ( np.flipud(wE[1:].transpose()) )**(0.5), interpolation='spline16', cmap='Blues', extent=[-1,1,-1,1])
 plt.savefig('./figures/dos-projection.pdf', bbox_inches='tight')
 plt.savefig('./figures/dos-projection.png', bbox_inches='tight')
 
 # normal dos
-img = ax.imshow( (np.flipud(gE.transpose()) )**2, interpolation='spline16', cmap='Blues', extent=[-1,1,-1,1])
+img = ax.imshow( (np.flipud(gE[1:].transpose()) )**(1.0), interpolation='spline16', cmap='Blues', extent=[-1,1,-1,1])
 plt.savefig('./figures/dos-full.pdf', bbox_inches='tight')
 
 

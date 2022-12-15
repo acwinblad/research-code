@@ -26,11 +26,11 @@ for f in files:
 
 # variable values
 # mc [5-10]
-mc = 3
+mc = 10
 Nm = 2*mc+1
 
 # rc [10-20]
-rc = 20
+rc = 10
 Ns = 2*rc+1
 
 
@@ -49,26 +49,25 @@ m = 0.067 * m_e # GaAs/AlGaAs-> m* = 0.067m_e = 0.067 * 0.51 MeV/c^2
 # incoming light energy and wavenumber
 hw = 191E-3 # meV
 k = hw / (hbar * c)
-print('K =', k)
 
 # lattice constants
-a = 0.56E-9 # GaAs/AlGaAs-> a = 0.56nm
+#a = 0.56E-9 # GaAs/AlGaAs-> a = 0.56nm
 #a = 0.3186E-9 # GaN/AlGaN-> a = 0.3186nm
 #a = 0.38E-9 # LaAlo3/SrTio3 -> a = 0.3186nm
-#a = 1.0E-9
+a = 1.0E-9
 ka = k*a
 #ka = 5.00
 
 # hopping parameter in eV
 t = hbar**2 / (2 * a**2 * m)
-#t = 2.0
-#m = hbar**2 / (2 * t * a**2)
-print('m =', m)
+t = 1.0E1
+m = hbar**2 / (2 * t * a**2)
 
 # Electric field and phi_0
 E = 1E9 # V/m
 # Don't need electron charge here since it cancels with the e in eV
 phimax = E*a/hw
+phimax = 0.5
 B = ( k**2 * hbar**3 * phimax**2 ) / ( m * a**2 * hw )
 alpha = ( hbar**2 * k**2 ) / ( m * hw )
 nphi = 50
@@ -76,6 +75,8 @@ phimin = 0
 # since the magnetic flux, f^S, is proportional to phi squared we make the spacing of phi on square root intervals, later we square the axis to get a uniform range.
 phi0 = np.array( [ (phimin + i/nphi)**(1/2) for i in range(nphi) ] ) * phimax
 
+print('m =', m)
+print('K =', k)
 print('ka= ', ka)
 print('t= ', t)
 print('B= ', B)
@@ -99,7 +100,7 @@ for k in range(nphi):
   Qmn = np.zeros( [Nm*Ns, Nm*Ns],"complex" )
   for i in range(Nm):
     for j in range(Nm-i):
-      midx = mc-j
+      midx = -mc+j
       r1 = (i+j)*Ns
       r2 = (i+j+1)*Ns
       c1 = j*Ns

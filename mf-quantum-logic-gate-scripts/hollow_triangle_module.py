@@ -10,7 +10,9 @@ import matplotlib.tri as mtri
 from matplotlib import cbook
 import pathlib
 
-def build_hollow_triangle(_a, _outernr, _outerlen, _width, _yp):
+yp= np.sqrt(3)/2
+
+def build_hollow_triangle(_a, _outernr, _outerlen, _width):
   # Innernr should always be at least 1 if we want a hollow triangle, but we can generalize to a full t    riangle for convenience.
   # The next available concentric triangle is always 3 less than the number of rows the triangle has.
   innernr = _outernr-3*_width
@@ -20,14 +22,19 @@ def build_hollow_triangle(_a, _outernr, _outerlen, _width, _yp):
 
   # Build triangle polygon, either full or hollow
   # Construct two triangles whose edges are the hollow triangles boundary (with tolerance)
-  outertri = geo.Polygon([(-.5 * _outerlen, 0), (0, _yp * _outerlen), (.5 * _outerlen, 0)])
+  outertri = geo.Polygon([(-.5 * _outerlen, 0), (0, yp * _outerlen), (.5 * _outerlen, 0)])
   if( _width == 0 ):
     innertri = geo.Polygon([(0,0),(0,0),(0,0)])
   elif( _width == 1 ):
-    delta = 0.02*_a
-    innertri = geo.Polygon([( -(_outerlen - _a) / 2, _yp * _a / 3), ( 0, _yp * (3 * _outerlen - 2 * _a) / 3), ( (_outerlen - _a ) / 2, _yp / 3) ])
+    innertri = geo.Polygon([( -(_outerlen - _a) / 2, yp * _a / 3), ( 0, yp * (3 * _outerlen - 2 * _a) / 3), ( (_outerlen - _a ) / 2, yp / 3) ])
   else:
-    innertri = geo.Polygon([(-.5 * innerlen, _yp * (_width - 1 * _a)), (0, _yp * (innerlen + _width - 1 * _a)), (.5 * innerlen, _yp * (_width - 1 * _a))])
+    #innertri = geo.Polygon([(-.5 * innerlen, yp * (_width - 1 * _a)), (0, yp * (innerlen + _width - 1 * _a)), (.5 * innerlen, yp * (_width - 1 * _a))])
+    innertri = geo.Polygon([(0.5*innerlen-_a/2, _width*_a*yp),
+                            (0.5*innerlen-_a, (_width-1)*_a*yp),
+                            (-0.5*innerlen+_a, (_width-1)*_a*yp),
+                            (-0.5*innerlen+_a/2, _width*_a*yp),
+                            (-_a/2, (_outernr-_width-3)*_a*yp),
+                            (_a/2, (_outernr-_width-3)*_a*yp)])
   # Take difference of the two triangles to get a hollow triangle
   hollowtri = outertri.symmetric_difference(innertri)
   return hollowtri, innertri
@@ -48,14 +55,15 @@ def create_directory_path(_vecPotType, _mu, _outernr, _width):
   pathlib.Path(filepath2).mkdir(parents=True, exist_ok=True)
   return filepath, filepath2
 
-def plot_hollow_triangle_lattice(_a, _yp, _outernr, _hollowtri, _innertri, _filepath):
+# This function is used to test if we are getting the triangular structure we want
+def plot_hollow_triangle_lattice(_a, _outernr, _hollowtri, _innertri, _filepath):
   n = _outernr*(_outernr+1)//2
   siteCoord = np.zeros((n,2))
   latticeCtr = 0
   for i in range(_outernr):
     for j in range(i+1):
       siteCoord[latticeCtr,0] = _a*(j-i/2)
-      siteCoord[latticeCtr,1] = (_outernr-1-i)*_a*_yp
+      siteCoord[latticeCtr,1] = (_outernr-1-i)*_a*yp
       latticeCtr += 1
 
   fig = plt.figure(1, dpi=90)
@@ -73,6 +81,7 @@ def plot_hollow_triangle_lattice(_a, _yp, _outernr, _hollowtri, _innertri, _file
   plt.clf()
   plt.cla()
 
+# This is to give us an idea of what the vector potential looks like on our triangular structure
 def plot_vector_potential(_coords, _filepath):
   x = _coords[:,0]
   y = _coords[:,1]
@@ -87,31 +96,76 @@ def plot_vector_potential(_coords, _filepath):
   plt.clf()
   plt.cla()
 
-def hollow_triangle_coords(_a, _yp, _outernr, _hollowtri):
-  # Find lattice point coordinates inside the hollow triangle, used for nearest-neighbor
+# Find lattice point coordinates inside the hollow triangle, used for nearest-neighbor
+def hollow_triangle_coords(_a, _outernr, _hollowtri):
   coords = np.empty((1,2))
   for i in range(_outernr):
     for j in range(i+1):
       xi = _a*(j-i/2)
-      yi = (_outernr-1-i)*_a*_yp
+      yi = (_outernr-1-i)*_a*yp
       if( _hollowtri.buffer(0.001*_a).intersects(geo.Point(xi,yi)) ):
         coords = np.append(coords,np.array([[xi, yi]]), axis=0)
   coords = np.delete(coords,0,0)
   return coords
 
-def clone_width_one_interior_points(_a, _yp, _coords):
+# returns the distance between two points
+def dist(_dx, _dy):
+  return np.sqrt(_dx**2+_dy**2)
+
+def calc_phase_factor(_dx, _dy):
+  phase = np.arctan(_dy / _dx)
+  if _dx<0:
+    phase += np.pi
+  return np.exp(-1.0j*phase)
+
+def calc_phi_factor(_a, _nnx, _x, _dx, _dy, _vecPotFunc):
+  if(_vecPotFunc == 'step-function'):
+    if( np.abs(_dy) >= 1e-5*_a):
+      if(np.abs(_x) >= 1e-5*_a):
+        phi = -yp*_a * np.sign(_x)
+      else:
+        phi = -yp*_a * np.sign(_nnx)
+    else:
+      phi = 0
+  elif(_vecPotFunc == "linear"):
+    phi = -0.5 * (_dy/_dx) * (_nnx**2 - _x**2)
+  else:
+    phi = 0
+
+  return np.exp(1.0j*phi)
+
+# Lists the nearest neighbor as an integer list
+def nearest_neighbor_list(_a, _coords, _vecPotFunc):
+  n = np.size(_coords[:,0])
+  nnlist = [ [] for i in range(n-1)]
+  nnphaseFtr = [ [] for i in range(n-1)]
+  nnphiFtr = [ [] for i in range(n-1)]
+  for i in range(n-1):
+    for j in range(i+1,n):
+      dx = _coords[j,0] - _coords[i,0]
+      dy = _coords[j,1] - _coords[i,1]
+      d = dist(dx,dy)
+      if(np.abs(d-_a) < 1e-5*_a):
+        nnlist[i].append(j)
+        nnphaseFtr[i].append(calc_phase_factor(dx, dy))
+        nnphiFtr[i].append(calc_phi_factor(_a, _coords[j,0], _coords[i,0], dx, dy, _vecPotFunc))
+
+  return nnlist, nnphaseFtr, nnphiFtr
+
+
+def clone_width_one_interior_points(_a, _coords):
   x = _coords[:,0]
   y = _coords[:,1]
   n = np.size(x)
   length = 2*np.max(x)
   dups = np.zeros(n, dtype=bool)
   # create a triangle polygon with the corners cut off.
-  interiorEdge = geo.Polygon([( -(length - _a) / 2, _yp * _a),
+  interiorEdge = geo.Polygon([( -(length - _a) / 2, yp * _a),
                           ( -(length / 2 - _a), 0),
                           (length / 2 - _a, 0),
-                          ( (length - _a) / 2, _yp * _a),
-                          ( _a / 2, (length - _a) * _yp),
-                          ( -_a / 2, (length - _a) * _yp)])
+                          ( (length - _a) / 2, yp * _a),
+                          ( _a / 2, (length - _a) * yp),
+                          ( -_a / 2, (length - _a) * yp)])
 
   # find all the points that lie on this polygon's edge
   for i in range(n):
@@ -124,26 +178,26 @@ def clone_width_one_interior_points(_a, _yp, _coords):
   y0 = np.where(abs(y2) < 1e-5*_a)
   xNeg = np.where(np.logical_and(x2<0, y2>0))
   xPos = np.where(np.logical_and(x2>0, y2>0))
-  shift = 0.04*_a
+  shift = 0.08*_a
   y2[y0] += shift
-  x2[xNeg] += _yp*shift/2
+  x2[xNeg] += yp*shift/2
   y2[xNeg] += -shift/2
-  x2[xPos] += -_yp*shift/2
+  x2[xPos] += -yp*shift/2
   y2[xPos] += -shift/2
   clonedCoords = np.vstack([x2,y2]).T
 
   return clonedCoords, dups
 
-def shifted_innertri(_a, _yp, _length):
-  shift = _a * 0.04
-  shift2 = _yp * shift / 2
+def shifted_innertri(_a, _length):
+  shift = _a * 0.08
+  shift2 = yp * shift / 2
   shift3 = shift / 2
-  interiorEdge = geo.Polygon([( -(_length - _a) / 2 + shift2, _yp * _a - shift3),
+  interiorEdge = geo.Polygon([( -(_length - _a) / 2 + shift2, yp * _a - shift3),
                               ( -(_length / 2 - _a), shift),
                               (_length / 2 - _a, shift),
-                              ( (_length - _a) / 2 - shift2, _yp * _a - shift3),
-                              ( _a / 2 - shift2, (_length - _a) * _yp - shift3),
-                              ( -_a / 2 + shift2, (_length - _a) * _yp - shift3)])
+                              ( (_length - _a) / 2 - shift2, yp * _a - shift3),
+                              ( _a / 2 - shift2, (_length - _a) * yp - shift3),
+                              ( -_a / 2 + shift2, (_length - _a) * yp - shift3)])
 
   return interiorEdge
 
@@ -157,7 +211,7 @@ def create_centroids_mask(_a, _coords, _innertri):
   mask = np.zeros(np.size(triang.triangles[:,0]), dtype=bool)
 
   for i, val in enumerate(mask):
-    mask[i] = _innertri.buffer(0.001*_a).intersects(geo.Point(centroids[0,i], centroids[1,i]))
+    mask[i] = _innertri.buffer(0.020*_a).intersects(geo.Point(centroids[0,i], centroids[1,i]))
   triang.set_mask(mask)
   return triang
 
@@ -168,10 +222,11 @@ def plot_hollow_triangle_wavefunction(_a, _width, _innertri, _coords, _triang, _
   triang = mtri.Triangulation(x, y)
   centroids = np.zeros(n)
   centroids = np.vstack((x[triang.triangles].mean(axis=1), y[triang.triangles].mean(axis=1)))
+  #centri = mtri.Triangulation(centroids[0,:], centroids[1,:])
   mask = np.zeros(np.size(triang.triangles[:,0]), dtype=bool)
 
   for i, val in enumerate(mask):
-    mask[i] = _innertri.buffer(0.001*_a).intersects(geo.Point(centroids[0,i], centroids[1,i]))
+    mask[i] = _innertri.buffer(0.020*_a).intersects(geo.Point(centroids[0,i], centroids[1,i]))
   triang.set_mask(mask)
   idx = np.arange(-_nE, _nE)
 
@@ -202,15 +257,17 @@ def plot_hollow_triangle_wavefunction(_a, _width, _innertri, _coords, _triang, _
     im = ax.tricontourf(triang, _states[0:n,i]+_states[n:2*n,i], cmap='Blues')
     ax.tricontourf(triang, _states[0:n,i]+_states[n:2*n,i], cmap='Blues')
     ax.triplot(triang, '.k', markersize=1)
+    #ax.triplot(centri, '.r', markersize=1)
     fig.colorbar(im, ax = ax, pad=0.010, label = '$\|\Psi\|^2$')
 
     axins = ax.inset_axes([0.02,0.70, 0.30, 0.30])
     axins.set_aspect('equal')
     axins.tricontourf(triang, _states[0:n,i]+_states[n:2*n,i], cmap='Blues')
     axins.triplot(triang, '.k', markersize=1)
-    axins.set_xlim(np.min(x),np.min(x)+_width+_a/2)
+    #axins.triplot(centri, '.r', markersize=1)
+    axins.set_xlim(np.min(x),np.min(x)+_width+_a+_a/2)
     if(_width > 1):
-      axins.set_ylim(0, np.sqrt(3)/2 * _width)
+      axins.set_ylim(0, np.sqrt(3)/2 * (_width + _a))
     elif(_width == 0):
       axins.set_xlim(np.min(x),np.min(x)+_a)
       axins.set_ylim(0, np.sqrt(3)/2 * 0.75*_a)
@@ -224,9 +281,10 @@ def plot_hollow_triangle_wavefunction(_a, _width, _innertri, _coords, _triang, _
     axins2.set_aspect('equal')
     axins2.tricontourf(triang, _states[0:n,i]+_states[n:2*n,i], cmap='Blues')
     axins2.triplot(triang, '.k', markersize=1)
-    axins2.set_xlim(np.max(x)-_width-_a/2,np.max(x))
+    #axins2.triplot(centri, '.r', markersize=1)
+    axins2.set_xlim(np.max(x)-_width-_a-_a/2,np.max(x))
     if(_width > 1):
-      axins2.set_ylim(0, np.sqrt(3)/2 * _width)
+      axins2.set_ylim(0, np.sqrt(3)/2 * (_width + _a))
     elif(_width == 0):
       axins2.set_xlim(np.max(x)-_a,np.max(x))
       axins2.set_ylim(0, np.sqrt(3)/2 * 0.75*_a)

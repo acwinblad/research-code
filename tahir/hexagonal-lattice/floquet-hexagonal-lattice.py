@@ -18,39 +18,52 @@ s1 = np.sin(tau)
 c2 = np.cos(2*tau)
 
 # number of modes
-mc = 3
+mc = 8
 Nm = 2*mc+1
 marr = np.arange(0, Nm, 1) - mc
 
 # radius
-rc = 15
+rc = 5
 Ns = 2*rc+1
 rarr = np.arange(0, Ns, 1) - rc
 
 # constants
 hbar = 6.582E-16 # 6.582 * 10^-16 eV*s
-c = 2.998E* # 2.998 * 10^8 m/s
-m_e = 0.51E6 / c**2 # 0.51 MeV/c^2
+c = 2.998E8 # 2.998 * 10^8 m/s
 ec = 1.602E-19 # C
+vf = 1E6 # fermi velocity 10^6 m/s
 
-# incoming light
+# effective mass of electron
+m_e = 0.51E6 / c**2 # 0.51 MeV/c^2
+m = 0.012 * m_e
+
+# incoming light and wavenumber
 hw = 191E-3 # meV
-ka = 0.1
-a = 100E-9 # nm
-t = hbar**2 / (2 * a**2 * m_e)
+k = hw / (hbar * c)
 
-E = 2E8 # V/m
-alpha = ka / (8*np.pi*hw**2)
-nphi = 100
+# lattice constant
+a = 0.246E-9 # nm
+ka = k*a
+
+# hopping parameters in eV
+t = ( 2 * hbar * vf ) / ( 3 * a )
+E = 5E8 # V/m
+phimax = E*a/hw
+C = 1 - ( vf * hbar * phimax ) / ( a * hw )
+B = ( k * hbar**3 * vf**2 * phimax**2 ) / ( 4 * a**3 * hw**2 * C )
+alpha = ( 3*np.sqrt(3) * k * hbar**2 * vf**2 ) / ( 8 * a * hw**2 * C )
 phimin = 0.0
-phimax = 0.15 * 1e-1
-phiE = np.array( [ (phimin + i/nphi)**(1/3) for i in range(nphi) ] ) * phimax
+nphi = 50
+phi0 = np.array( [ (phimin + i/nphi)**(1/3) for i in range(nphi) ] ) * phimax
 
-print(t)
-print(alpha)
-print(phimax)
-print(alpha*phimax**2)
-print('B =', )
+print('m =', m)
+print('K =', k)
+print('ka= ', ka)
+print('t= ', t)
+print('B= ', B)
+print('alpha= ', alpha)
+print('phi= ', phimax)
+print('phi_b= ', alpha*phimax**3)
 
 jjdifx = np.array([np.sqrt(3)/2, 0, np.sqrt(3)/2])
 jjavgx = np.array([np.sqrt(3)/4, np.sqrt(3)/2, 3*np.sqrt(3)/4])
@@ -68,13 +81,13 @@ def hblock(_p, _n):
   for ridx, rval in enumerate(rarr):
     tmp = np.outer([s1,],[jjdifx,]) + 0.5*np.outer([c2,],[jjdify*np.sin(ka*(rval*np.sqrt(3)+jjavgx)),])
     tmp = np.exp(-1.0j * ( _p*tmp + _n*np.outer([tau,],[np.ones(3),]) ) )
-    tmp = -np.trapz(tmp, x=tau, axis=0) / (2*np.pi)
+    tmp = -t*np.trapz(tmp, x=tau, axis=0) / (2*np.pi)
     hnblock[4*ridx:4*(ridx+1),4*ridx:4*(ridx+1)] = np.diag(tmp, k=1) + np.diag(tmp.conjugate(), k=-1)
 
   for ridx, rval in enumerate(rarr[1:]):
     tmp = np.outer([s1,],[jp1difx,]) + 0.5*np.outer([c2,],[jp1dify*np.sin(ka*((2*rval+1)*np.sqrt(3)/2+jp1avgx)),])
     tmp = np.exp(-1.0j * ( _p*tmp + _n*np.outer([tau,],[np.ones(3),]) ) )
-    tmp = -np.trapz(tmp, x=tau, axis=0) / (2*np.pi)
+    tmp = -t*np.trapz(tmp, x=tau, axis=0) / (2*np.pi)
 
     Hjp1 = np.reshape( [0,0,0,0, tmp[0],0,0,0,  0,0,0,0, tmp[1],0,tmp[2],0], (4,4) )
     hnblock[4*ridx:4*(ridx+1), 4*(ridx+1):4*(ridx+2)] = Hjp1
@@ -95,7 +108,7 @@ def hblock(_p, _n):
 #    Hn = hblock(pval, midx)
 
 energy = np.zeros( (4*Nm*Ns, nphi) )
-for phiidx, phival in enumerate(phiE):
+for phiidx, phival in enumerate(phi0):
   # Build H_ijn matrices as a 3D matrix
   Hn = np.zeros( [Nm, 4*Ns, 4*Ns], "complex")
   Qmn = np.zeros( [4*Nm*Ns, 4*Nm*Ns], "complex" )
@@ -120,4 +133,4 @@ for phiidx, phival in enumerate(phiE):
 
 np.savetxt('./data/eng-matrix.txt', energy, fmt = '%1.8f')
 
-np.savetxt('./data/config-floquet.txt', [rc, mc, alpha, phimin, phimax, nphi])
+np.savetxt('./data/config-floquet.txt', [rc, mc, t, alpha, phimin, phimax, nphi])

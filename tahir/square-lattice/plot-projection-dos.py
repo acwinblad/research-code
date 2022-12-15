@@ -23,6 +23,7 @@ mf = (mc+1)*ns
 
 # load calculated values and states
 energy = np.loadtxt('./data/eng-matrix.txt')
+n = np.size(energy[0,:])
 stateslist = sorted( glob.glob( './data/eigenstate-phi-*.txt') )
 
 # calculate weight/projection on 0th order Block
@@ -40,9 +41,9 @@ for i, statefilename in enumerate(stateslist):
 # calculate a weighted/projected density of states as a function of phi
 Emax = np.max(energy)
 Emin = np.min(energy)
-Emax = +1.0*t
+Emax = -3.0*t
 Emin = -4.0*t
-nE = 200
+nE = 500
 dE = (Emax-Emin)/(nE-1)
 E = np.array([i*dE+Emin for i in range(nE)])
 
@@ -53,7 +54,7 @@ for i in range(nphi):
   for j in range(nE-1):
     idx = np.where(np.logical_and(energy[:,i]>E[j],energy[:,i]<E[j+1]))[0]
     wE[i,j+1] = np.sum(weight[i,idx])
-    gE[i,j+1] = np.sum(idx)
+    gE[i,j+1] = np.size(idx)
 
 #wE[wE!=0]=1
 # setup plot for weighted density of states
@@ -61,22 +62,33 @@ fig, ax = plt.subplots(1,1)
 
 # set x-axis
 xticks = np.linspace(-1,1,5, endpoint=True)
-xlabelarray = np.linspace( alpha * phimin**2, alpha * phimax**2, 5, endpoint=True)
+xlabelarray = np.linspace( 1 * phimin**2, 1 * phimax**2, 5, endpoint=True)
 ax.set_xticks(xticks)
-ax.set_xticklabels(['%1.2e' % val for val in xlabelarray])
-ax.set_xlabel('$\phi_{B_{eff}} = %1.4f\phi_E^2$' % alpha)
+ax.set_xticklabels(['%1.1E' % val for val in xlabelarray])
+ax.set_xlabel('$\phi_{B_{eff}} = (%1.1E)\phi_E^2$' % alpha)
 
 # set y-axis
 yticks = np.linspace(-1,1,5, endpoint=True)
 ylabelarray = np.linspace(Emin, Emax, 5, endpoint=True)
 ax.set_yticks(yticks)
-ax.set_yticklabels(['%1.2f' % val for val in ylabelarray])
-ax.set_ylabel('$E(\phi_E)$')
+ax.set_yticklabels(['%1.1f' % val for val in ylabelarray])
+ax.set_ylabel('$E(\phi_E)$ eV')
 
 # plot and save figures
-img = ax.imshow( ( np.flipud(wE.transpose()) )**(0.5), interpolation='spline16', cmap='Blues', extent=[-1,1,-1,1])
+img = ax.imshow( ( np.flipud(wE[1:].transpose()) )**(0.5), interpolation='spline16', cmap='Blues', extent=[-1,1,-1,1])
 plt.savefig('./figures/dos-projection.pdf', bbox_inches='tight')
 
 # normal dos
-img = ax.imshow( (np.flipud(gE.transpose()) )**1, interpolation='spline16', cmap='Blues', extent=[-1,1,-1,1])
+img = ax.imshow( (np.flipud(gE[1:].transpose()) )**1, interpolation='spline16', cmap='Blues', extent=[-1,1,-1,1])
 plt.savefig('./figures/dos-full.pdf', bbox_inches='tight')
+plt.close()
+
+# plot and save figures
+phi = np.linspace(0, 1*phimax**2, nphi, endpoint=True)
+for i in range(n):
+  y = energy[i,:]
+  color = weight[:,i]
+  plt.plot(phi, energy[i,:], lw=0.5, c='grey', alpha=0.20)
+  plt.scatter(phi,energy[i,:], c=color, cmap='Reds', lw=0, s=10, alpha=0.50)
+plt.savefig('./figures/scatter-dos.pdf', bbox_inches='tight')
+plt.close()
