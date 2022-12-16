@@ -12,10 +12,10 @@ PlotFlag = False
 t = 1
 delta = t
 #mu = -0.8
-nmu= 1*50
+nmu= 15
 muvals = np.linspace(0, 2.0,nmu+1)
 a = 1
-n = 20
+n = 85
 
 #x = np.array([ (i - (n-1) / 2) * a for i in range(n)])
 #XX = (a**2 + 2*x[:-1])/2
@@ -24,7 +24,7 @@ XX = x[:-1]
 
 # Create B values for the vector potential strength
 Bmax = 1*PI/a
-nB = 1*100
+nB = 2*nmu
 Bvals = np.linspace(0*PI,Bmax,nB+1)
 eob = np.zeros((2*n,nB+1))
 
@@ -49,8 +49,8 @@ if(PBC==True):
 
 for j, muvalues in enumerate(muvals):
   for i, bvalues in enumerate(Bvals):
-    ## quick way to build the BdG Hamiltonian since it's a linear chain
     tarr = t*np.exp(1.0j*bvalues*XX)
+    ## quick way to build the BdG Hamiltonian since it's a linear chain
     bdg[0:n, 0:n] = -muvalues*np.eye(n) - np.diag(tarr,k=-1) - np.diag(np.conjugate(tarr),k=1)
     bdg[n:2*n, n:2*n] = -np.conjugate(bdg[0:n, 0:n])
 
@@ -61,7 +61,7 @@ for j, muvalues in enumerate(muvals):
     A = -1.0j * U * bdg * np.conjugate(np.transpose(U))
     np.savetxt('./data/top-inv-a.txt', np.real(A), fmt='%1.1f')
     #majNum[j,i] = np.sign(pf.pfaffian(A))
-    majNum[j,i] = np.sign(pf.pfaffian(A))*np.abs(eng[n]-eng[n-1])
+    majNum[j,i] = np.sign(np.real(pf.pfaffian(A)))*np.abs(eng[n]-eng[n-1])
 
 np.savetxt('./data/top-inv-majorana-number.txt', majNum)
 print('Finished')
@@ -84,5 +84,6 @@ if(PlotFlag==True):
   plt.imshow(majNum, cmap='Blues_r')
   plt.show()
   plt.close()
+
 
 

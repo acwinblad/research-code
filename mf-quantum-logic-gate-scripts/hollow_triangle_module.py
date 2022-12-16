@@ -12,37 +12,38 @@ import pathlib
 
 yp= np.sqrt(3)/2
 
-def build_hollow_triangle(_a, _outernr, _outerlen, _width):
+def build_hollow_triangle(_a, _nr, _width):
   # Innernr should always be at least 1 if we want a hollow triangle, but we can generalize to a full t    riangle for convenience.
   # The next available concentric triangle is always 3 less than the number of rows the triangle has.
-  innernr = _outernr-3*_width
+  innernr = _nr-3*_width
   innerlen = _a * (innernr + 2)
   if(innernr < -1):
     innernr = innerlen = _width = 0
+  outerlen = _a*(_nr-1)
 
   # Build triangle polygon, either full or hollow
   # Construct two triangles whose edges are the hollow triangles boundary (with tolerance)
-  outertri = geo.Polygon([(-.5 * _outerlen, 0), (0, yp * _outerlen), (.5 * _outerlen, 0)])
+  outertri = geo.Polygon([(-.5 * outerlen, 0), (0, yp * outerlen), (.5 * outerlen, 0)])
   if( _width == 0 ):
     innertri = geo.Polygon([(0,0),(0,0),(0,0)])
   elif( _width == 1 ):
-    innertri = geo.Polygon([( -(_outerlen - _a) / 2, yp * _a / 3), ( 0, yp * (3 * _outerlen - 2 * _a) / 3), ( (_outerlen - _a ) / 2, yp / 3) ])
+    innertri = geo.Polygon([( -(outerlen - _a) / 2, yp * _a / 3), ( 0, yp * (3 * outerlen - 2 * _a) / 3), ( (outerlen - _a ) / 2, yp / 3) ])
   else:
     #innertri = geo.Polygon([(-.5 * innerlen, yp * (_width - 1 * _a)), (0, yp * (innerlen + _width - 1 * _a)), (.5 * innerlen, yp * (_width - 1 * _a))])
     innertri = geo.Polygon([(0.5*innerlen-_a/2, _width*_a*yp),
                             (0.5*innerlen-_a, (_width-1)*_a*yp),
                             (-0.5*innerlen+_a, (_width-1)*_a*yp),
                             (-0.5*innerlen+_a/2, _width*_a*yp),
-                            (-_a/2, (_outernr-_width-3)*_a*yp),
-                            (_a/2, (_outernr-_width-3)*_a*yp)])
+                            (-_a/2, (_nr-_width-3)*_a*yp),
+                            (_a/2, (_nr-_width-3)*_a*yp)])
   # Take difference of the two triangles to get a hollow triangle
   hollowtri = outertri.symmetric_difference(innertri)
   return hollowtri, innertri
 
-def create_directory_path(_vecPotType, _mu, _outernr, _width):
+def create_directory_path(_vecPotType, _mu, _nr, _width):
   # Create figure file name. if mu is positive it'll have a 'p' and if negative it'll have 'n'
   filepath = './data/figures/%s-vector-potential/' % _vecPotType
-  filepath += 'nr-%i/w-%i/' % (_outernr, _width)
+  filepath += 'nr-%i/w-%i/' % (_nr, _width)
   absmu = abs(_mu)
   mustring = f"{absmu:1.4f}"
   mustring = mustring.replace('.','_')
@@ -56,14 +57,14 @@ def create_directory_path(_vecPotType, _mu, _outernr, _width):
   return filepath, filepath2
 
 # This function is used to test if we are getting the triangular structure we want
-def plot_hollow_triangle_lattice(_a, _outernr, _hollowtri, _innertri, _filepath):
-  n = _outernr*(_outernr+1)//2
+def plot_hollow_triangle_lattice(_a, _nr, _hollowtri, _innertri, _filepath):
+  n = _nr*(_nr+1)//2
   siteCoord = np.zeros((n,2))
   latticeCtr = 0
-  for i in range(_outernr):
+  for i in range(_nr):
     for j in range(i+1):
       siteCoord[latticeCtr,0] = _a*(j-i/2)
-      siteCoord[latticeCtr,1] = (_outernr-1-i)*_a*yp
+      siteCoord[latticeCtr,1] = (_nr-1-i)*_a*yp
       latticeCtr += 1
 
   fig = plt.figure(1, dpi=90)
@@ -97,12 +98,12 @@ def plot_vector_potential(_coords, _filepath):
   plt.cla()
 
 # Find lattice point coordinates inside the hollow triangle, used for nearest-neighbor
-def hollow_triangle_coords(_a, _outernr, _hollowtri):
+def hollow_triangle_coords(_a, _nr, _hollowtri):
   coords = np.empty((1,2))
-  for i in range(_outernr):
+  for i in range(_nr):
     for j in range(i+1):
       xi = _a*(j-i/2)
-      yi = (_outernr-1-i)*_a*yp
+      yi = (_nr-1-i)*_a*yp
       if( _hollowtri.buffer(0.001*_a).intersects(geo.Point(xi,yi)) ):
         coords = np.append(coords,np.array([[xi, yi]]), axis=0)
   coords = np.delete(coords,0,0)
@@ -188,16 +189,17 @@ def clone_width_one_interior_points(_a, _coords):
 
   return clonedCoords, dups
 
-def shifted_innertri(_a, _length):
+def shifted_innertri(_a, _nr):
+  length = _a*(_nr-1)
   shift = _a * 0.08
   shift2 = yp * shift / 2
   shift3 = shift / 2
-  interiorEdge = geo.Polygon([( -(_length - _a) / 2 + shift2, yp * _a - shift3),
-                              ( -(_length / 2 - _a), shift),
-                              (_length / 2 - _a, shift),
-                              ( (_length - _a) / 2 - shift2, yp * _a - shift3),
-                              ( _a / 2 - shift2, (_length - _a) * yp - shift3),
-                              ( -_a / 2 + shift2, (_length - _a) * yp - shift3)])
+  interiorEdge = geo.Polygon([( -(length - _a) / 2 + shift2, yp * _a - shift3),
+                              ( -(length / 2 - _a), shift),
+                              (length / 2 - _a, shift),
+                              ( (length - _a) / 2 - shift2, yp * _a - shift3),
+                              ( _a / 2 - shift2, (length - _a) * yp - shift3),
+                              ( -_a / 2 + shift2, (length - _a) * yp - shift3)])
 
   return interiorEdge
 
@@ -299,7 +301,7 @@ def plot_hollow_triangle_wavefunction(_a, _width, _innertri, _coords, _triang, _
     plt.clf()
     plt.cla()
 
-def plot_hollow_triangle_spectral_flow(_mu, _outernr, _B0, _width, _Bmax, _nE, _bvals, _evb, _filepath):
+def plot_hollow_triangle_spectral_flow(_mu, _nr, _B0, _width, _Bmax, _nE, _bvals, _evb, _filepath):
   ymin = np.min(_evb[0:_nE,:])
   ymax = -ymin
   plt.figure()
@@ -311,9 +313,9 @@ def plot_hollow_triangle_spectral_flow(_mu, _outernr, _B0, _width, _Bmax, _nE, _
   plt.xlabel('$B$', fontsize=12)
   plt.ylabel('Energy (t)', fontsize=12)
   if(_width!=0):
-    plt.title('$n_r$ = %i, $w_{edge}$ = %i, $\mu$ = %1.4f' % (_outernr, _width, _mu))
+    plt.title('$n_r$ = %i, $w_{edge}$ = %i, $\mu$ = %1.4f' % (_nr, _width, _mu))
   else:
-    plt.title('$n_r$ = %i, $\mu$ = %1.4f' % (_outernr, _mu))
+    plt.title('$n_r$ = %i, $\mu$ = %1.4f' % (_nr, _mu))
   plt.axvline(x=_B0, color='black', ls='--')
   for i in range(2*_nE):
     plt.plot(_bvals,_evb[i,:], 'b')

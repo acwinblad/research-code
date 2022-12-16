@@ -18,10 +18,9 @@ t = 1
 delta = t
 muarr = np.linspace(-6*t,6*t,1001)
 mu = muarr[235]
-mu = 1.7*t
+mu = 1.8*t
 a = 1
-outernr = 100
-outerlen = a*(outernr-1)
+nr = 50
 
 vecPotFunc = 'step-function'
 #vecPotFunc = 'linear'
@@ -30,7 +29,7 @@ if(vecPotFunc=='step-function'):
   B0 = 4 * np.pi / (3 * np.sqrt(3) * a)
   B0 = 2.3*np.pi / a /2
 elif(vecPotFunc=='linear'):
-  B0 = 8 * np.pi / (3 * np.sqrt(3) * a**2 * (2 * outernr - 3) )
+  B0 = 8 * np.pi / (3 * np.sqrt(3) * a**2 * (2 * nr - 3) )
 elif(vecPotFunc=='tanh'):
   print('tanh function not setup yet')
 else:
@@ -42,17 +41,17 @@ else:
 width = 1
 width *= a
 # Build the hollow triangle lattice
-hollowtri, innertri = htm.build_hollow_triangle(a, outernr, outerlen, width)
+hollowtri, innertri = htm.build_hollow_triangle(a, nr, width)
 
 # Populate what the directory hierarchy will be
-latticePlotPath, filepath = htm.create_directory_path(vecPotFunc, mu, outernr, width)
+latticePlotPath, filepath = htm.create_directory_path(vecPotFunc, mu, nr, width)
 
 # Test to see if the hollow triangle is being constructed as wanted
 if(plotLattice):
-  htm.plot_hollow_triangle_lattice(a, outernr, hollowtri, innertri, latticePlotPath)
+  htm.plot_hollow_triangle_lattice(a, nr, hollowtri, innertri, latticePlotPath)
 
 # Find lattice point coordinates inside the hollow triangle, used for nearest-neighbor and saved later for plotting (maybe)
-coords = htm.hollow_triangle_coords(a, outernr, hollowtri)
+coords = htm.hollow_triangle_coords(a, nr, hollowtri)
 # if the width is 1 we want to clone the interior points, we use this later for plotting. Also get the boolean array of their locations wrt to the original coordinates matrix.
 if(width == a):
   clonedCoords, clonedCoordsBool = htm.clone_width_one_interior_points(a, coords)
@@ -65,7 +64,7 @@ if(plotVectorField):
 if(width != a):
   triang = htm.create_centroids_mask(a, coords, innertri)
 else:
-  innertri = htm.shifted_innertri(a, outerlen)
+  innertri = htm.shifted_innertri(a, nr)
   newCoords = np.vstack([coords,clonedCoords])
   triang = htm.create_centroids_mask(a, newCoords, innertri)
 
@@ -87,11 +86,23 @@ n = np.size(coords[:,0])
 bdg = np.zeros((2*n,2*n), dtype='complex')
 nnlist, nnphaseFtr, nnphiFtr = htm.nearest_neighbor_list(a, coords, vecPotFunc)
 
+bdg[n-1, n-nr] = -t
+bdg[2*n-1, 2*n-nr] = t
+bdg[2*n-1, n-nr] = delta
+bdg[2*n-nr, n-1] = -delta
+
 # the order parameter will not change so we only need to initialize it once
 for i in range(len(nnlist)):
   for j, nn in enumerate(nnlist[i]):
     bdg[i+n, nn] = delta*nnphaseFtr[i][j]
     bdg[nn+n, i] = -bdg[i+n, nn]
+
+bdg[2+n,1] = 0
+bdg[1+n,2] = 0
+bdg[2*n-2,n-nr-1] = 0
+bdg[2*n-nr-1, n-2] = 0
+bdg[2*n-nr+1, n-nr-2] = 0
+bdg[2*n-nr-2, n-nr+1] = 0
 
 bdg[0:n, 0:n] = -mu*np.eye(n)
 bdg[n:2*n, n:2*n] = mu*np.eye(n)
@@ -102,6 +113,12 @@ for k,values in enumerate(bvals):
     for j, nn in enumerate(nnlist[i]):
       bdg[nn, i] = -t * nnphiFtr[i][j]**values
       bdg[nn+n, i+n] = -np.conjugate(bdg[nn, i])
+  bdg[2,1] = 0
+  bdg[2+n,1+n] = 0
+  bdg[n-2,n-nr-1] = 0
+  bdg[2*n-2,2*n-nr-1] = 0
+  bdg[n-nr+1,n-nr-2] = 0
+  bdg[2*n-nr+1,2*n-nr-2] = 0
 
   # Solve the eigenvalue problem for energies only
   eng, vec = np.linalg.eigh(bdg)
@@ -130,5 +147,5 @@ np.savetxt('./data/hollow-triangle-bdg-copy.txt', bdg, fmt='%1.2e')
   #np.savetxt('./data/hollow-triangle-energy.txt', eng, fmt='%1.8e')
 
 if(plotSpectral):
-  htm.plot_hollow_triangle_spectral_flow(mu, outernr, B0, width, Bmax, nE, bvals, evb, filepath
+  htm.plot_hollow_triangle_spectral_flow(mu, nr, B0, width, Bmax, nE, bvals, evb, filepath
       )
