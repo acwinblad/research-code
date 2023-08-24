@@ -16,22 +16,25 @@ plotSpectral = True
 # Define parameters
 t = 1
 delta = t
-muarr = np.linspace(-6*t,6*t,1001)
-mu = muarr[235]
-mu = 1.8*t
+mu = 1.6*t
 a = 1
-nr = 50
+nr = 25
 
 vecPotFunc = 'step-function'
 #vecPotFunc = 'linear'
+vecPotFunc = 'constant'
 #vecPotFunc = 'tanh'
 if(vecPotFunc=='step-function'):
-  B0 = 4 * np.pi / (3 * np.sqrt(3) * a)
-  B0 = 2.3*np.pi / a /2
+  A0 = 6 * np.pi / (3 * np.sqrt(3) * a)
+  #A0 = 2*np.pi / a /2
+  #A0 = 2*np.pi / (np.sqrt(3) * a) / 2
 elif(vecPotFunc=='linear'):
-  B0 = 8 * np.pi / (3 * np.sqrt(3) * a**2 * (2 * nr - 3) )
+  A0 = 8 * np.pi / (3 * np.sqrt(3) * a**2 * (2 * nr - 3) )
+elif(vecPotFunc=='constant'):
+  A0 = 6 * np.pi / (3 * np.sqrt(3) * a)
 elif(vecPotFunc=='tanh'):
-  print('tanh function not setup yet')
+  A0 = 2 * np.pi / (3 * np.sqrt(3) * a)
+  A0 = 6 * np.pi / (3 * np.sqrt(3) * a)
 else:
   print('pick a vector potential type from the following: step-function, linear, tanh')
 
@@ -44,7 +47,7 @@ width *= a
 hollowtri, innertri = htm.build_hollow_triangle(a, nr, width)
 
 # Populate what the directory hierarchy will be
-latticePlotPath, filepath = htm.create_directory_path(vecPotFunc, mu, nr, width)
+latticePlotPath, filepath = htm.create_directory_path('increasing-' + vecPotFunc, mu, nr, width)
 
 # Test to see if the hollow triangle is being constructed as wanted
 if(plotLattice):
@@ -70,82 +73,92 @@ else:
 
 # Loop through the varying values of B for the vector potential
 nE = 2*2 # must be even?
-nk = 20
-dB = B0 / nk
-Bmults = int(2)
-Bmax = Bmults * B0
-if(Bmults>1):
-  bvals = np.linspace(0,Bmax,Bmults*nk+1)
-  evb = np.zeros((2*nE,Bmults*nk+1))
+nk = 100
+dA = A0 / nk
+Amults = int(2)
+Amax = Amults * A0
+if(Amults>1):
+  avals = np.linspace(0,Amax,Amults*nk+1)
+  eva = np.zeros((2*nE,Amults*nk+1))
 else:
-  bvals = np.linspace(0,B0,nk)
-  evb = np.zeros((2*nE,nk))
+  avals = np.linspace(0,A0,nk)
+  eva = np.zeros((2*nE,nk))
 
 # Initialize BdG Hamiltonian
 n = np.size(coords[:,0])
 bdg = np.zeros((2*n,2*n), dtype='complex')
-nnlist, nnphaseFtr, nnphiFtr = htm.nearest_neighbor_list(a, coords, vecPotFunc)
+nnlist, nnphaseFtr, nnphiParams = htm.nearest_neighbor_list(a, coords)
 
-bdg[n-1, n-nr] = -t
-bdg[2*n-1, 2*n-nr] = t
-bdg[2*n-1, n-nr] = delta
-bdg[2*n-nr, n-1] = -delta
+#bdg[n-1, n-nr] = -t
+#bdg[2*n-1, 2*n-nr] = t
+#bdg[2*n-1, n-nr] = delta
+#bdg[2*n-nr, n-1] = -delta
 
 # the order parameter will not change so we only need to initialize it once
-for i in range(len(nnlist)):
-  for j, nn in enumerate(nnlist[i]):
-    bdg[i+n, nn] = delta*nnphaseFtr[i][j]
-    bdg[nn+n, i] = -bdg[i+n, nn]
+for j in range(len(nnlist)):
+  for nnl, l in enumerate(nnlist[j]):
+    bdg[l, n+j] = delta*nnphaseFtr[j][nnl]
+    bdg[j, n+l] = -bdg[l, n+j]
 
-bdg[2+n,1] = 0
-bdg[1+n,2] = 0
-bdg[2*n-2,n-nr-1] = 0
-bdg[2*n-nr-1, n-2] = 0
-bdg[2*n-nr+1, n-nr-2] = 0
-bdg[2*n-nr-2, n-nr+1] = 0
+#bdg[2+n,1] = 0
+#bdg[1+n,2] = 0
+#bdg[2*n-2,n-nr-1] = 0
+#bdg[2*n-nr-1, n-2] = 0
+#bdg[2*n-nr+1, n-nr-2] = 0
+#bdg[2*n-nr-2, n-nr+1] = 0
 
 bdg[0:n, 0:n] = -mu*np.eye(n)
-bdg[n:2*n, n:2*n] = mu*np.eye(n)
+#bdg[n-nr:n, n-nr:n] = -100*t*np.eye(nr)
+#bdg[0:n-nr:2,0:n-nr:2] = -1000*mu*np.eye(nr-1)
+#bdg[0:3, 0:3] = -1000*mu*np.eye(3)
 
-for k,values in enumerate(bvals):
+bdg[n:2*n, n:2*n] = mu*np.eye(n)
+#bdg[2*n-nr:2*n, 2*n-nr:2*n] = -bdg[n-nr:n, n-nr:n]
+#bdg[n:2*n-nr:2,n:2*n-nr:2] = 1000*mu*np.eye(nr-1)
+#bdg[n:n+3, n:n+3] = 1000*mu*np.eye(3)
+
+for k,values in enumerate(avals):
   # Construct the BdG Hamiltonian for varying vector potential strengths bvalues
-  for i in range(len(nnlist)):
-    for j, nn in enumerate(nnlist[i]):
-      bdg[nn, i] = -t * nnphiFtr[i][j]**values
-      bdg[nn+n, i+n] = -np.conjugate(bdg[nn, i])
-  bdg[2,1] = 0
-  bdg[2+n,1+n] = 0
-  bdg[n-2,n-nr-1] = 0
-  bdg[2*n-2,2*n-nr-1] = 0
-  bdg[n-nr+1,n-nr-2] = 0
-  bdg[2*n-nr+1,2*n-nr-2] = 0
+  for j in range(len(nnlist)):
+    for nnl, l in enumerate(nnlist[j]):
+      phiftr = htm.calc_phi(a, coords[j,0], coords[l,0], coords[j,1], coords[l,1], nnphiParams[j][nnl][0], nnphiParams[j][nnl][1], 0, vecPotFunc)
+      bdg[j, l] = -t * phiftr**values
+      bdg[j+n, l+n] = -np.conjugate(bdg[j, l])
+
+  #bdg[2,1] = 0
+  #bdg[2+n,1+n] = 0
+  #bdg[n-2,n-nr-1] = 0
+  #bdg[2*n-2,2*n-nr-1] = 0
+  #bdg[n-nr+1,n-nr-2] = 0
+  #bdg[2*n-nr+1,2*n-nr-2] = 0
 
   # Solve the eigenvalue problem for energies only
-  eng, vec = np.linalg.eigh(bdg)
-  evb[:,k] = eng[n-nE:n+nE]
+  eng, vec = np.linalg.eigh(bdg/2, UPLO = 'U')
+  eva[:,k] = eng[n-nE:n+nE]
   vec = np.real(np.multiply(vec, np.conj(vec)))
-  vvb = vec[:,n-nE:n+nE]
+  vva = vec[:,n-nE:n+nE]
 
   # Let's only plot the wavefunction of the states if we have a MF or MF-like state for a given vector potential strength
-  if(abs(evb[nE,k]) < 1E-10):
+  if(abs(eva[nE,k]) < 1E-8):
     if(width != 1):
-      htm.plot_hollow_triangle_wavefunction(a, width, innertri, coords, triang, nE, values, evb[:,k], vvb, filepath)
+      if(values % (A0 / 2) == 0):
+        htm.plot_hollow_triangle_wavefunction(a, width, innertri, coords, triang, nE, values, eva[:,k], vva, filepath)
     else:
       # copy the eigenstate elements to the correct locations!
       # split
-      v0 = vvb[0:n,:]
-      v00 = vvb[n:2*n,:]
+      v0 = vva[0:n,:]
+      v00 = vva[n:2*n,:]
       # append in the cloned coordinates eigenstate values
       v1 = np.vstack([v0,v0[clonedCoordsBool,:]])
       v2 = np.vstack([v00,v00[clonedCoordsBool,:]])
       # recombine the two sets to get the intended state vector
       newvec = np.vstack([v1,v2])
-      htm.plot_hollow_triangle_wavefunction(a, width, innertri, np.vstack([coords,clonedCoords]), triang, nE, values, evb[:,k], newvec, filepath)
+      #htm.plot_hollow_triangle_wavefunction(a, width, innertri, np.vstack([coords,clonedCoords]), triang, nE, values, eva[:,k], newvec, filepath)
+      #htm.plot_hollow_triangle_wavefunction_circles(a, width, innertri, coords, triang, nE, values, eva[:,k], vva, filepath)
 
-np.savetxt('./data/hollow-triangle-bdg-copy.txt', bdg, fmt='%1.2e')
+#np.savetxt('./data/hollow-triangle-bdg-copy.txt', bdg, fmt='%1.2e')
   ## Save data
   #np.savetxt('./data/hollow-triangle-energy.txt', eng, fmt='%1.8e')
 
 if(plotSpectral):
-  htm.plot_hollow_triangle_spectral_flow(mu, nr, B0, width, Bmax, nE, bvals, evb, filepath
-      )
+  htm.plot_hollow_triangle_spectral_flow(mu, nr, A0, width, nE, avals, eva, filepath)

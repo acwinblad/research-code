@@ -47,9 +47,9 @@ if(PBC==True):
   bdg[n,n-1] = -delta
   bdg[n-1,n] = -delta
 
-for j, muvalues in enumerate(muvals):
-  for i, bvalues in enumerate(Bvals):
-    tarr = t*np.exp(1.0j*bvalues*XX)
+for i, bvalues in enumerate(Bvals):
+  tarr = t*np.exp(1.0j*bvalues*XX)
+  for j, muvalues in enumerate(muvals):
     ## quick way to build the BdG Hamiltonian since it's a linear chain
     bdg[0:n, 0:n] = -muvalues*np.eye(n) - np.diag(tarr,k=-1) - np.diag(np.conjugate(tarr),k=1)
     bdg[n:2*n, n:2*n] = -np.conjugate(bdg[0:n, 0:n])

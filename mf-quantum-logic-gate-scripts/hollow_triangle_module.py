@@ -4,16 +4,20 @@ import numpy as np
 import shapely as sh
 from shapely import ops
 import shapely.geometry as geo
+import shapely.affinity as aff
 import descartes as ds
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 from matplotlib import cbook
+from mpl_toolkits.axes_grid.inset_locator import (inset_axes, InsetPosition, mark_inset)
 import pathlib
 
 yp= np.sqrt(3)/2
+plt.rcParams.update({'font.size': 13})
 
 def build_hollow_triangle(_a, _nr, _width):
-  # Innernr should always be at least 1 if we want a hollow triangle, but we can generalize to a full t    riangle for convenience.
+  # Innernr should always be at least 1 if we want a hollow triangle, but we can generalize to a full triangle for convenience.
   # The next available concentric triangle is always 3 less than the number of rows the triangle has.
   innernr = _nr-3*_width
   innerlen = _a * (innernr + 2)
@@ -34,8 +38,11 @@ def build_hollow_triangle(_a, _nr, _width):
                             (0.5*innerlen-_a, (_width-1)*_a*yp),
                             (-0.5*innerlen+_a, (_width-1)*_a*yp),
                             (-0.5*innerlen+_a/2, _width*_a*yp),
-                            (-_a/2, (_nr-_width-3)*_a*yp),
-                            (_a/2, (_nr-_width-3)*_a*yp)])
+                            (-_a/2, (_nr-2*_width)*_a*yp),
+                            (_a/2, (_nr-2*_width)*_a*yp)])
+  # Shift triangle downward to center it around its centroid
+  outertri = aff.translate(outertri, xoff=0, yoff=-yp*outerlen/3)
+  innertri = aff.translate(innertri, xoff=0, yoff=-yp*outerlen/3)
   # Take difference of the two triangles to get a hollow triangle
   hollowtri = outertri.symmetric_difference(innertri)
   return hollowtri, innertri
@@ -67,6 +74,8 @@ def plot_hollow_triangle_lattice(_a, _nr, _hollowtri, _innertri, _filepath):
       siteCoord[latticeCtr,1] = (_nr-1-i)*_a*yp
       latticeCtr += 1
 
+  # Shift all sites downward to center it around its centroid
+  siteCoord[:,1] += -yp*_a*(_nr-1)/3
   fig = plt.figure(1, dpi=90)
   ax = fig.add_subplot(111)
   x,y = _hollowtri.exterior.xy
@@ -103,7 +112,7 @@ def hollow_triangle_coords(_a, _nr, _hollowtri):
   for i in range(_nr):
     for j in range(i+1):
       xi = _a*(j-i/2)
-      yi = (_nr-1-i)*_a*yp
+      yi = (_nr-1-i)*_a*yp - _a*yp*(_nr-1)/3
       if( _hollowtri.buffer(0.001*_a).intersects(geo.Point(xi,yi)) ):
         coords = np.append(coords,np.array([[xi, yi]]), axis=0)
   coords = np.delete(coords,0,0)
@@ -119,44 +128,66 @@ def calc_phase_factor(_dx, _dy):
     phase += np.pi
   return np.exp(-1.0j*phase)
 
-def calc_phi_factor(_a, _nnx, _x, _dx, _dy, _vecPotFunc):
-  if(_vecPotFunc == 'step-function'):
-    if( np.abs(_dy) >= 1e-5*_a):
-      if(np.abs(_x) >= 1e-5*_a):
-        phi = -yp*_a * np.sign(_x)
-      else:
-        phi = -yp*_a * np.sign(_nnx)
-    else:
-      phi = 0
-  elif(_vecPotFunc == "linear"):
-    phi = -0.5 * (_dy/_dx) * (_nnx**2 - _x**2)
-  else:
-    phi = 0
+def calc_phi(_a, _xj, _xl, _yj, _yl, _dx, _dy, _t, _vecPotFunc):
+  #_t = _t % np.pi
+  m = _dy / _dx
+  b = _yl - m * _xl
+  ct = np.cos(_t)
+  st = np.sin(_t)
+  rotdl = m * ct - st
 
-  return np.exp(1.0j*phi)
+  ## The Vector strength A will be treated as positive, some functions have the negative factor included in the integrand or phi
+  if(_vecPotFunc == 'step-function'):
+    ## Needs numerical integration
+    xarr = np.linspace(_xj, _xl, 2001)
+    yarr = m * xarr + b
+    x1 = xarr * ct + yarr * st
+    integrand = (1 - 2 * np.heaviside(x1, 0.5)) * rotdl
+    phi = np.trapz(integrand,xarr)
+
+  elif(_vecPotFunc == 'tanh'):
+    ## Needs numerical integration
+    alpha = 1000
+    xarr = np.linspace(_xj, _xl, 4001)
+    yarr = m * xarr + b
+    x1 = xarr * ct + yarr * st
+    integrand = -np.tanh(alpha * x1) * rotdl
+    phi = np.trapz(integrand,xarr)
+
+  elif(_vecPotFunc == 'linear'):
+    ## Integral is done by hand
+    phi = -rotdl * (0.5 * (ct + m * st) * (_xl**2 - _xj**2) + b * st * _dx)
+
+  elif(_vecPotFunc == 'constant'):
+    ## Integral is done by hand
+    phi = rotdl * _dx
+
+  return np.exp(1.0j * phi)
 
 # Lists the nearest neighbor as an integer list
-def nearest_neighbor_list(_a, _coords, _vecPotFunc):
+def nearest_neighbor_list(_a, _coords):
   n = np.size(_coords[:,0])
+  outerlen = 2*np.max(_coords[:,0])
   nnlist = [ [] for i in range(n-1)]
   nnphaseFtr = [ [] for i in range(n-1)]
-  nnphiFtr = [ [] for i in range(n-1)]
-  for i in range(n-1):
-    for j in range(i+1,n):
-      dx = _coords[j,0] - _coords[i,0]
-      dy = _coords[j,1] - _coords[i,1]
+  nnphiParams = [ [] for i in range(n-1)]
+  for j in range(n-1):
+    for l in range(j+1,n):
+      dx = _coords[l,0] - _coords[j,0]
+      dy = _coords[l,1] - _coords[j,1]
       d = dist(dx,dy)
       if(np.abs(d-_a) < 1e-5*_a):
-        nnlist[i].append(j)
-        nnphaseFtr[i].append(calc_phase_factor(dx, dy))
-        nnphiFtr[i].append(calc_phi_factor(_a, _coords[j,0], _coords[i,0], dx, dy, _vecPotFunc))
+        nnlist[j].append(l)
+        nnphaseFtr[j].append(calc_phase_factor(dx, dy))
+        nnphiParams[j].append([dx, dy])
 
-  return nnlist, nnphaseFtr, nnphiFtr
+  return nnlist, nnphaseFtr, nnphiParams
 
 
 def clone_width_one_interior_points(_a, _coords):
   x = _coords[:,0]
   y = _coords[:,1]
+  ymin = np.min(y)
   n = np.size(x)
   length = 2*np.max(x)
   dups = np.zeros(n, dtype=bool)
@@ -169,6 +200,7 @@ def clone_width_one_interior_points(_a, _coords):
                           ( -_a / 2, (length - _a) * yp)])
 
   # find all the points that lie on this polygon's edge
+  interiorEdge = aff.translate(interiorEdge, xoff=0, yoff=ymin)
   for i in range(n):
     dups[i] = interiorEdge.buffer(0.001*_a).intersects(geo.Point(x[i], y[i]))
 
@@ -176,10 +208,10 @@ def clone_width_one_interior_points(_a, _coords):
   y2 = y[dups]
 
   #since we are going to shift the clonedCoords we return dups bool array to duplicate eigenstate elements later
-  y0 = np.where(abs(y2) < 1e-5*_a)
-  xNeg = np.where(np.logical_and(x2<0, y2>0))
-  xPos = np.where(np.logical_and(x2>0, y2>0))
-  shift = 0.08*_a
+  y0 = np.where(y2 < ymin + 1e-5*_a)
+  xNeg = np.where(np.logical_and(x2<0, y2>ymin+1e-5*_a))
+  xPos = np.where(np.logical_and(x2>0, y2>ymin+1e-5*_a))
+  shift = 0.10*_a
   y2[y0] += shift
   x2[xNeg] += yp*shift/2
   y2[xNeg] += -shift/2
@@ -191,7 +223,7 @@ def clone_width_one_interior_points(_a, _coords):
 
 def shifted_innertri(_a, _nr):
   length = _a*(_nr-1)
-  shift = _a * 0.08
+  shift = _a * 0.10
   shift2 = yp * shift / 2
   shift3 = shift / 2
   interiorEdge = geo.Polygon([( -(length - _a) / 2 + shift2, yp * _a - shift3),
@@ -201,6 +233,8 @@ def shifted_innertri(_a, _nr):
                               ( _a / 2 - shift2, (length - _a) * yp - shift3),
                               ( -_a / 2 + shift2, (length - _a) * yp - shift3)])
 
+  # Shift the interior edge downward to center around its centroid
+  interiorEdge = aff.translate(interiorEdge, xoff=0, yoff=-yp*length/3)
   return interiorEdge
 
 def create_centroids_mask(_a, _coords, _innertri):
@@ -217,10 +251,45 @@ def create_centroids_mask(_a, _coords, _innertri):
   triang.set_mask(mask)
   return triang
 
+def plot_chain_triangle_wavefunction(_a, _coords, _nE, _tval, _energy, _states, _filepath):
+  x = _coords[:,0]
+  n = np.size(x)
+
+  for i in range(2*_nE):
+    if(i < _nE):
+      Estring = 'En' + f"{_nE-i-1:02d}"
+    else:
+      Estring = 'Ep' + f"{i-_nE:02d}"
+    Bstring = f"{_tval}"
+    absb = abs(_tval)
+    Bstring = f"{absb:1.4f}"
+    Bstring = Bstring.replace('.','_')
+    Bstring = '-B-%s' % Bstring
+    figname = _filepath + Estring + Bstring + '.pdf'
+
+    fig, ax = plt.subplots()
+
+    #ax.set_aspect('equal')
+    #ax.set_xlabel('$x\ (a)$')
+    #ax.set_ylabel('$y\ (a)$')
+    ax.set_title('$\epsilon$=%1.4e, $B$=%1.4e' % (_energy[i], _tval))
+    ax.plot(_states[0:n,i] + _states[n:2*n,i])
+
+    plt.tight_layout()
+    plt.savefig(figname)
+    plt.close()
+    plt.clf()
+    plt.cla()
+
+
 def plot_hollow_triangle_wavefunction(_a, _width, _innertri, _coords, _triang, _nE, _bval, _energy, _states, _filepath):
   x = _coords[:,0]
   y = _coords[:,1]
+  xmin = np.min(x)
+  xmax = np.max(x)
+  ymin = np.min(y)
   n = np.size(x)
+
   triang = mtri.Triangulation(x, y)
   centroids = np.zeros(n)
   centroids = np.vstack((x[triang.triangles].mean(axis=1), y[triang.triangles].mean(axis=1)))
@@ -230,13 +299,12 @@ def plot_hollow_triangle_wavefunction(_a, _width, _innertri, _coords, _triang, _
   for i, val in enumerate(mask):
     mask[i] = _innertri.buffer(0.020*_a).intersects(geo.Point(centroids[0,i], centroids[1,i]))
   triang.set_mask(mask)
-  idx = np.arange(-_nE, _nE)
 
-  for i in idx:
-    if(i <= 0):
-      Estring = 'Ep' + f"{_nE+i:02d}"
-    else:
+  for i in range(2*_nE):
+    if(i < _nE):
       Estring = 'En' + f"{_nE-i-1:02d}"
+    else:
+      Estring = 'Ep' + f"{i-_nE:02d}"
     Bstring = f"{_bval}"
     absb = abs(_bval)
     Bstring = f"{absb:1.4f}"
@@ -253,28 +321,28 @@ def plot_hollow_triangle_wavefunction(_a, _width, _innertri, _coords, _triang, _
     #clb.ax.set_ylabel('$\|\Psi\|^2$' , rotation=0, labelpad=15, fontsize=12)
 
     ax.set_aspect('equal')
-    ax.set_xlabel('$x\ (a)$', fontsize=12)
-    ax.set_ylabel('$y\ (a)$', fontsize=12)
+    ax.set_xlabel('$x\ (a)$')
+    ax.set_ylabel('$y\ (a)$')
     ax.set_title('$\epsilon$=%1.4e, $B$=%1.4e' % (_energy[i], _bval))
     im = ax.tricontourf(triang, _states[0:n,i]+_states[n:2*n,i], cmap='Blues')
     ax.tricontourf(triang, _states[0:n,i]+_states[n:2*n,i], cmap='Blues')
-    ax.triplot(triang, '.k', markersize=1)
+    ax.triplot(triang, '.k', markersize=1.0, markeredgecolor='none')
     #ax.triplot(centri, '.r', markersize=1)
-    fig.colorbar(im, ax = ax, pad=0.010, label = '$\|\Psi\|^2$')
+    fig.colorbar(im, ax = ax, pad=0.010, label = '$\|\Psi|^2$')
 
     axins = ax.inset_axes([0.02,0.70, 0.30, 0.30])
     axins.set_aspect('equal')
     axins.tricontourf(triang, _states[0:n,i]+_states[n:2*n,i], cmap='Blues')
-    axins.triplot(triang, '.k', markersize=1)
+    axins.triplot(triang, '.k', markersize=1.0, markeredgecolor='none')
     #axins.triplot(centri, '.r', markersize=1)
-    axins.set_xlim(np.min(x),np.min(x)+_width+_a+_a/2)
+    axins.set_xlim(xmin, xmin + _width+_a+_a/2)
     if(_width > 1):
-      axins.set_ylim(0, np.sqrt(3)/2 * (_width + _a))
+      axins.set_ylim(ymin, ymin + yp * (_width + _a))
     elif(_width == 0):
-      axins.set_xlim(np.min(x),np.min(x)+_a)
-      axins.set_ylim(0, np.sqrt(3)/2 * 0.75*_a)
+      axins.set_xlim(xmin, xmin + _a)
+      axins.set_ylim(ymin, ymin + yp * 0.75*_a)
     else:
-      axins.set_ylim(0, np.sqrt(3)/2 * _width * 1.25)
+      axins.set_ylim(ymin, ymin + yp * _width * 1.25)
 
     axins.set_xticklabels([])
     axins.set_yticklabels([])
@@ -282,16 +350,16 @@ def plot_hollow_triangle_wavefunction(_a, _width, _innertri, _coords, _triang, _
     axins2 = ax.inset_axes([0.68,0.70, 0.30, 0.30])
     axins2.set_aspect('equal')
     axins2.tricontourf(triang, _states[0:n,i]+_states[n:2*n,i], cmap='Blues')
-    axins2.triplot(triang, '.k', markersize=1)
+    axins2.triplot(triang, '.k', markersize=1.0, markeredgecolor='none')
     #axins2.triplot(centri, '.r', markersize=1)
-    axins2.set_xlim(np.max(x)-_width-_a-_a/2,np.max(x))
+    axins2.set_xlim(xmax - _width-_a-_a/2, xmax)
     if(_width > 1):
-      axins2.set_ylim(0, np.sqrt(3)/2 * (_width + _a))
+      axins2.set_ylim(ymin, ymin + yp * (_width + _a))
     elif(_width == 0):
-      axins2.set_xlim(np.max(x)-_a,np.max(x))
-      axins2.set_ylim(0, np.sqrt(3)/2 * 0.75*_a)
+      axins2.set_xlim(np.max(x) - _a,np.max(x))
+      axins2.set_ylim(ymin, ymin + yp * 0.75*_a)
     else:
-      axins2.set_ylim(0, np.sqrt(3)/2 * _width * 1.25)
+      axins2.set_ylim(ymin, ymin + yp * _width * 1.25)
     axins2.set_xticklabels([])
     axins2.set_yticklabels([])
 
@@ -301,25 +369,209 @@ def plot_hollow_triangle_wavefunction(_a, _width, _innertri, _coords, _triang, _
     plt.clf()
     plt.cla()
 
-def plot_hollow_triangle_spectral_flow(_mu, _nr, _B0, _width, _Bmax, _nE, _bvals, _evb, _filepath):
-  ymin = np.min(_evb[0:_nE,:])
-  ymax = -ymin
+def plot_hollow_triangle_wavefunction_circles(_a, _width, _nr, _coords, _tvals, _energy, _states0, _states1, _filepath):
+  plt.rcParams.update({'font.size': 16})
+  x = _coords[:,0]
+  y = _coords[:,1]
+  xmin = np.min(x)
+  xmax = np.max(x)
+  ymin = np.min(y)
+  ymax = np.max(y)
+  n = np.size(x)
+
+  nl = _nr * _a
+  padd = nl // 8
+  paddins = 4
+  inssize = 1.2
+
+  vgs0 = _states0[0:n,:] + _states0[n:2*n,:]
+  vgs1 = _states1[0:n,:] + _states1[n:2*n,:]
+  wavefunction = vgs0+vgs1
+  wfmax = np.max(wavefunction)
+
+  vmin = 0
+  vmax = wfmax
+
+  figpreface = _filepath + 'GS'
+  for j, angle in enumerate(_tvals):
+    Tstring = f"{_tvals[j]:1.4f}"
+    Tstring = Tstring.replace('.','_')
+    Tstring = '-T-%s' % Tstring
+    figname = figpreface + Tstring
+
+    fig, ax = plt.subplots(dpi=300)
+
+    ax.set_aspect('equal')
+    #ax.set_xlabel('$x\ (a)$', fontsize=16)
+    #ax.set_ylabel('$y\ (a)$', fontsize=16)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    #ax.set_title('$\epsilon$=%1.4e, $\eta$=%1.4e' % (_energy[j], _tvals[j]))
+    plt.xlim(xmin-padd,xmax+padd)
+    plt.ylim(ymin-padd,ymax+padd)
+
+    #plt.triplot(triang, '.k', markersize=1.0, markeredgecolor='none')
+    im = plt.scatter(x,y, s=(301/(nl+2*padd))**2 * (20*wavefunction[:,j]+0.75)**2, c=wavefunction[:,j], cmap='plasma', linewidths=0, vmin=vmin, vmax=vmax, alpha=0.9)
+    #im = plt.scatter(x,y, s=(301/(_nr+1))**2, c=wavefunction[:,j], cmap='plasma', linewidths=0, vmin=vmin, vmax=vmax)
+    #im = plt.scatter(x,y+1.5, s=(201/(_nr+1))**2, c=wavefunction[:,j], cmap='plasma', linewidths=0, vmin=vmin, vmax=vmax)
+    fig.colorbar(im, ax = ax, pad=0.010, label = '$\|\Psi|^2$')
+    plt.tight_layout()
+    plt.quiver(0, 0, np.cos(angle+np.pi/2), np.sin(angle+np.pi/2))
+
+    axins = inset_axes(ax, width= inssize, height = inssize, loc=2)
+    axins.set_xticks([])
+    axins.set_yticks([])
+    axins.set_aspect('equal')
+    axins.scatter(x,y, s = (73*inssize/(_width-_a + 1.5*paddins))**2 * (20*wavefunction[:,j]+0.75)**2, c = wavefunction[:,j], cmap='plasma', linewidths=0, vmin=vmin, vmax=vmax, alpha=0.9)
+    axins.set_xlim(xmin-_a*paddins/2, xmin + (_width - _a + _a*paddins))
+    axins.set_ylim(ymin-_a*paddins/2, ymin + (_width - _a + _a*paddins))
+    if(_width == 0):
+      axins.set_xlim(xmin-_a*paddins/2, xmin + _a*paddins)
+      axins.set_ylim(ymin-_a*paddins/2, ymin + _a*paddins)
+
+    axins.set_xticklabels([])
+    axins.set_yticklabels([])
+
+    axins2 = inset_axes(ax, width= inssize, height = inssize, loc=1)
+    axins2.set_xticks([])
+    axins2.set_yticks([])
+    axins2.set_aspect('equal')
+    axins2.scatter(x,y, s = (73*inssize/(_width-_a + 1.5*paddins))**2 * (20*wavefunction[:,j]+0.75)**2, c = wavefunction[:,j], cmap='plasma', linewidths=0, vmin=vmin, vmax=vmax, alpha=0.9)
+    axins2.set_xlim(xmax - (_width - _a + _a*paddins), xmax + _a*paddins/2)
+    axins2.set_ylim(ymin-_a*paddins/2, ymin + (_width - _a + _a*paddins) )
+    if(_width == 0):
+      axins2.set_xlim(xmax-_a*paddins/2, xmax + _a*paddins)
+      axins2.set_ylim(ymin-_a*paddins/2, ymin + _a*paddins)
+
+    axins2.set_xticklabels([])
+    axins2.set_yticklabels([])
+
+    plt.savefig(figname+'.pdf')
+    plt.close()
+    plt.clf()
+    plt.cla()
+
+def plot_triple_hollow_triangle_wavefunction_circles(_a, _width, _nr, _coords, _tvals, _energy, _states, _filepath):
+  plt.rcParams.update({'font.size': 16})
+  x = _coords[:,0]
+  y = _coords[:,1]
+  xmin = np.min(x)
+  xmax = np.max(x)
+  ymin = np.min(y)
+  ymax = np.max(y)
+
+  xm = x + 2*xmax + _a
+  xr = xm + 2*xmax + _a
+
+  xmax = np.max(xr)
+
+  xtrip = np.concatenate((x,xm,xr))
+  ytrip = np.concatenate((y,y,y))
+
+  n = np.size(x)
+  nt = np.size(_tvals)
+
+  nl = _nr * _a
+  padd = nl // 8
+  paddins = 4
+  inssize = 1.2
+
+  wavefunction = np.zeros((3*n, nt))
+  for j in range(4):
+    tmp0 = np.concatenate((_states[j, 0:n, :], _states[j,2*n:3*n,:], _states[j,4*n:5*n,:]))
+    tmp1 = np.concatenate((_states[j, n:2*n, :], _states[j,3*n:4*n,:], _states[j,5*n:6*n,:]))
+    wavefunction += tmp0 + tmp1
+
+  wfmax = np.max(wavefunction)
+
+  vmin = 0
+  vmax = wfmax
+
+  figpreface = _filepath + 'GS'
+  for j, angle in enumerate(_tvals):
+    Tstring = f"{_tvals[j]:1.4f}"
+    Tstring = Tstring.replace('.','_')
+    Tstring = '-T-%s' % Tstring
+    figname = figpreface + Tstring
+
+    fig, ax = plt.subplots(dpi=300)
+
+    ax.set_aspect('equal')
+    #ax.set_xlabel('$x\ (a)$', fontsize=16)
+    #ax.set_ylabel('$y\ (a)$', fontsize=16)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    #ax.set_title('$\epsilon$=%1.4e, $\eta$=%1.4e' % (_energy[j], _tvals[j]))
+    plt.xlim(xmin-padd,xmax+padd)
+    plt.ylim(ymin-padd,ymax+padd)
+
+    #plt.triplot(triang, '.k', markersize=1.0, markeredgecolor='none')
+    im = plt.scatter(xtrip,ytrip, s=(301/(nl+2*padd))**2 * (20*wavefunction[:,j]+0.75)**2, c=wavefunction[:,j], cmap='plasma', linewidths=0, vmin=vmin, vmax=vmax, alpha=0.9)
+    #im = plt.scatter(x,y, s=(301/(_nr+1))**2, c=wavefunction[:,j], cmap='plasma', linewidths=0, vmin=vmin, vmax=vmax)
+    #im = plt.scatter(x,y+1.5, s=(201/(_nr+1))**2, c=wavefunction[:,j], cmap='plasma', linewidths=0, vmin=vmin, vmax=vmax)
+    fig.colorbar(im, ax = ax, pad=0.010, label = '$\|\Psi|^2$')
+    plt.tight_layout()
+    plt.quiver(2*xmax/5 + 2*_a, 0, np.cos(angle+np.pi/2), np.sin(angle+np.pi/2))
+
+    plt.savefig(figname+'.pdf')
+    plt.close()
+    plt.clf()
+    plt.cla()
+
+def plot_hollow_triangle_spectral_flow(_mu, _nr, _A0, _width, _nE, _avals, _eva, _filepath):
+  plt.rcParams.update({'font.size': 13})
+  #ymax = 1.01*np.max(_evb[:,:])
+  ymax = 0.2
+  ymin = -ymax
+  xmax = np.max(_avals)
+  xmin = np.min(_avals)
+
   plt.figure()
-  plt.tight_layout()
-  plt.grid(True)
-  plt.xlim(0,_Bmax)
-  #plt.xticks([round(-Bmax/4 * i, 2) for i in range(5)])
+  plt.xlim(xmin,xmax)
   plt.ylim(ymin, ymax)
-  plt.xlabel('$B$', fontsize=12)
-  plt.ylabel('Energy (t)', fontsize=12)
-  if(_width!=0):
-    plt.title('$n_r$ = %i, $w_{edge}$ = %i, $\mu$ = %1.4f' % (_nr, _width, _mu))
-  else:
-    plt.title('$n_r$ = %i, $\mu$ = %1.4f' % (_nr, _mu))
-  plt.axvline(x=_B0, color='black', ls='--')
+  plt.xlabel(r"$A$", fontsize=16)
+  plt.xticks(np.linspace(xmin, xmax, np.int(xmax)+1))
+  plt.ylabel('Energy (t)', fontsize=16)
+  plt.locator_params(axis='y', nbins=5)
+  plt.gca().xaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:1.2f}"))
+
   for i in range(2*_nE):
-    plt.plot(_bvals,_evb[i,:], 'b')
-  #plt.show()
+    plt.plot(_avals,_eva[i,:], 'C0')
+
+  plt.tight_layout()
+  plt.savefig(_filepath+'spectral-flow.pdf')
+  plt.close()
+  plt.clf()
+  plt.cla()
+
+def plot_hollow_triangle_rotation_spectral_flow(_mu, _nr, _A0, _width, _nE, _avals, _eva, _filepath):
+  plt.rcParams.update({'font.size': 16})
+  #ymax = 1.01*np.max(_evb[:,:])
+  ymax = 0.2
+  ymin = -ymax
+  xmax = _avals[-1]
+  xmin = _avals[0]
+
+  plt.figure()
+  plt.xlim(xmin,xmax)
+  plt.ylim(ymin, ymax)
+  plt.xlabel(r"$\varphi$ ($\pi$)", fontsize=20)
+  plt.xticks(np.linspace(xmin,xmax, 5))
+  plt.ylabel('Energy (t)', fontsize=18)
+  plt.locator_params(axis='y', nbins=5)
+  plt.gca().xaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:1.2f}"))
+
+  for i in range(2*_nE):
+    plt.plot(_avals,_eva[i,:], 'C0')
+
+  #plt.axvline(x=1/3, color='k', linestyle = "--")
+  #plt.axvline(x=2/3, color='k', linestyle = "--")
+  #plt.plot(0.0,0,"s",c='C1', markersize=10, clip_on=False, zorder=100)
+  #plt.plot(1/6,0,"o",c='C1', markersize=10)
+  #plt.plot(1/3,0,"D",c='C1', markersize=10)
+  #plt.plot(2/3,0,"^",c='C1', markersize=10)
+
+  plt.tight_layout()
   plt.savefig(_filepath+'spectral-flow.pdf')
   plt.close()
   plt.clf()
