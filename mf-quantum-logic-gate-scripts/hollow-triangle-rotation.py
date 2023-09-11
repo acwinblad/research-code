@@ -44,7 +44,7 @@ else:
 
 # The inner boundary is dependant on the width we want and bounded by the outer boundary.
 # Define the width first then we can determine the the number of rows of the inner boundary.
-width = 1
+width = 3
 width *= a
 # Build the hollow triangle lattice
 hollowtri, innertri = htm.build_hollow_triangle(a, nr, width)
@@ -77,13 +77,6 @@ for j in range(len(nnlist)):
     bdg[l, n+j] = delta*nnphaseFtr[j][nnl]
     bdg[j, n+l] = -bdg[l, n+j]
 
-#bdg[2+n,1] = 0
-#bdg[1+n,2] = 0
-#bdg[2*n-2,n-nr-1] = 0
-#bdg[2*n-nr-1, n-2] = 0
-#bdg[2*n-nr+1, n-nr-2] = 0
-#bdg[2*n-nr-2, n-nr+1] = 0
-
 bdg[0:n, 0:n] = -mu*np.eye(n)
 bdg[n:2*n, n:2*n] = mu*np.eye(n)
 
@@ -94,13 +87,6 @@ for k, angle in enumerate(tvals):
       phiftr = htm.calc_phi(a, coords[j,0], coords[l,0], coords[j,1], coords[l,1], nnphiParams[j][nnl][0], nnphiParams[j][nnl][1], angle, vecPotFunc)
       bdg[j, l] = -t * phiftr**A0
       bdg[n+j, n+l] = -np.conjugate(bdg[j, l])
-
-  #bdg[2,1] = 0
-  #bdg[2+n,1+n] = 0
-  #bdg[n-2,n-nr-1] = 0
-  #bdg[2*n-2,2*n-nr-1] = 0
-  #bdg[n-nr+1,n-nr-2] = 0
-  #bdg[2*n-nr+1,2*n-nr-2] = 0
 
   # Solve the eigenvalue problem for energies only
   eng, vec = np.linalg.eigh(bdg, UPLO = 'U')

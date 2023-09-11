@@ -18,7 +18,7 @@ t = 1
 delta = t
 mu = 1.6*t
 a = 1
-nr = 25
+nr = 50
 
 vecPotFunc = 'step-function'
 #vecPotFunc = 'linear'
@@ -41,7 +41,7 @@ else:
 
 # The inner boundary is dependant on the width we want and bounded by the outer boundary.
 # Define the width first then we can determine the the number of rows of the inner boundary.
-width = 1
+width = 3
 width *= a
 # Build the hollow triangle lattice
 hollowtri, innertri = htm.build_hollow_triangle(a, nr, width)
@@ -63,36 +63,10 @@ if(width == a):
 if(plotVectorField):
   htm.plot_vector_potential(coords, latticePlotPath)
 
-# Now that we have both coordinates and a hollow triangle polygon we want to make a centroids mask to be used later for plotting the wavefunction. returns a masked triang
-if(width != a):
-  triang = htm.create_centroids_mask(a, coords, innertri)
-else:
-  innertri = htm.shifted_innertri(a, nr)
-  newCoords = np.vstack([coords,clonedCoords])
-  triang = htm.create_centroids_mask(a, newCoords, innertri)
-
-# Loop through the varying values of B for the vector potential
-nE = 2*2 # must be even?
-nk = 100
-dA = A0 / nk
-Amults = int(2)
-Amax = Amults * A0
-if(Amults>1):
-  avals = np.linspace(0,Amax,Amults*nk+1)
-  eva = np.zeros((2*nE,Amults*nk+1))
-else:
-  avals = np.linspace(0,A0,nk)
-  eva = np.zeros((2*nE,nk))
-
 # Initialize BdG Hamiltonian
 n = np.size(coords[:,0])
 bdg = np.zeros((2*n,2*n), dtype='complex')
 nnlist, nnphaseFtr, nnphiParams = htm.nearest_neighbor_list(a, coords)
-
-#bdg[n-1, n-nr] = -t
-#bdg[2*n-1, 2*n-nr] = t
-#bdg[2*n-1, n-nr] = delta
-#bdg[2*n-nr, n-1] = -delta
 
 # the order parameter will not change so we only need to initialize it once
 for j in range(len(nnlist)):
@@ -100,22 +74,28 @@ for j in range(len(nnlist)):
     bdg[l, n+j] = delta*nnphaseFtr[j][nnl]
     bdg[j, n+l] = -bdg[l, n+j]
 
-#bdg[2+n,1] = 0
-#bdg[1+n,2] = 0
-#bdg[2*n-2,n-nr-1] = 0
-#bdg[2*n-nr-1, n-2] = 0
-#bdg[2*n-nr+1, n-nr-2] = 0
-#bdg[2*n-nr-2, n-nr+1] = 0
-
 bdg[0:n, 0:n] = -mu*np.eye(n)
-#bdg[n-nr:n, n-nr:n] = -100*t*np.eye(nr)
-#bdg[0:n-nr:2,0:n-nr:2] = -1000*mu*np.eye(nr-1)
-#bdg[0:3, 0:3] = -1000*mu*np.eye(3)
-
 bdg[n:2*n, n:2*n] = mu*np.eye(n)
-#bdg[2*n-nr:2*n, 2*n-nr:2*n] = -bdg[n-nr:n, n-nr:n]
-#bdg[n:2*n-nr:2,n:2*n-nr:2] = 1000*mu*np.eye(nr-1)
-#bdg[n:n+3, n:n+3] = 1000*mu*np.eye(3)
+
+# Loop through the varying values of B for the vector potential
+nE = 2*2 # must be even?
+nk = 45
+dA = A0 / nk
+Amults = int(2)
+Amax = Amults * A0
+if(Amults>1):
+  nkk = Amults*nk+1
+  avals = np.linspace(0,Amax,nkk)
+  eva = np.zeros((2*nE,nkk))
+  evaa = np.zeros((nkk))
+  vgs0a = np.zeros((2*n, nkk))
+  vgs1a = np.zeros((2*n, nkk))
+else:
+  avals = np.linspace(0,A0,nk)
+  eva = np.zeros((2*nE,nk))
+  evaa = np.zeros((nk))
+  vgs0a = np.zeros((2*n, nk))
+  vgs1a = np.zeros((2*n, nk))
 
 for k,values in enumerate(avals):
   # Construct the BdG Hamiltonian for varying vector potential strengths bvalues
@@ -125,40 +105,20 @@ for k,values in enumerate(avals):
       bdg[j, l] = -t * phiftr**values
       bdg[j+n, l+n] = -np.conjugate(bdg[j, l])
 
-  #bdg[2,1] = 0
-  #bdg[2+n,1+n] = 0
-  #bdg[n-2,n-nr-1] = 0
-  #bdg[2*n-2,2*n-nr-1] = 0
-  #bdg[n-nr+1,n-nr-2] = 0
-  #bdg[2*n-nr+1,2*n-nr-2] = 0
-
   # Solve the eigenvalue problem for energies only
-  eng, vec = np.linalg.eigh(bdg/2, UPLO = 'U')
+  eng, vec = np.linalg.eigh(bdg, UPLO = 'U')
   eva[:,k] = eng[n-nE:n+nE]
+  evaa[k] = eng[n]
   vec = np.real(np.multiply(vec, np.conj(vec)))
-  vva = vec[:,n-nE:n+nE]
+  vgs0a[:,k] = vec[:,n]
+  vgs1a[:,k] = vec[:,n+1]
 
   # Let's only plot the wavefunction of the states if we have a MF or MF-like state for a given vector potential strength
-  if(abs(eva[nE,k]) < 1E-8):
-    if(width != 1):
-      if(values % (A0 / 2) == 0):
-        htm.plot_hollow_triangle_wavefunction(a, width, innertri, coords, triang, nE, values, eva[:,k], vva, filepath)
-    else:
-      # copy the eigenstate elements to the correct locations!
-      # split
-      v0 = vva[0:n,:]
-      v00 = vva[n:2*n,:]
-      # append in the cloned coordinates eigenstate values
-      v1 = np.vstack([v0,v0[clonedCoordsBool,:]])
-      v2 = np.vstack([v00,v00[clonedCoordsBool,:]])
-      # recombine the two sets to get the intended state vector
-      newvec = np.vstack([v1,v2])
-      #htm.plot_hollow_triangle_wavefunction(a, width, innertri, np.vstack([coords,clonedCoords]), triang, nE, values, eva[:,k], newvec, filepath)
-      #htm.plot_hollow_triangle_wavefunction_circles(a, width, innertri, coords, triang, nE, values, eva[:,k], vva, filepath)
 
 #np.savetxt('./data/hollow-triangle-bdg-copy.txt', bdg, fmt='%1.2e')
   ## Save data
   #np.savetxt('./data/hollow-triangle-energy.txt', eng, fmt='%1.8e')
 
+htm.plot_hollow_triangle_wavefunction_circles(a, width, nr, coords, avals, evaa, vgs0a, vgs1a, filepath)
 if(plotSpectral):
   htm.plot_hollow_triangle_spectral_flow(mu, nr, A0, width, nE, avals, eva, filepath)

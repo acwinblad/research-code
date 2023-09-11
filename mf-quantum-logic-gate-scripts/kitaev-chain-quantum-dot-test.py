@@ -21,9 +21,9 @@ muf = -1.0*t
 muarr = np.linspace(mui,muf,nmu)
 
 # Size of left kitaev chain, quantum dot, and right kitaev chain
-nl = 0
-nqd = 30
-ndx = 0
+nl = 1
+nqd = 0
+ndx = 1
 nr = 50 * 2**2
 n = nl + nqd + nr
 

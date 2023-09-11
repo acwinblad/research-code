@@ -18,7 +18,7 @@ t = 1
 delta = t
 mu = 1.6*t
 a = 1
-nr = 200
+nr = 100
 
 vecPotFunc = 'step-function'
 #vecPotFunc = 'linear'
@@ -32,7 +32,7 @@ elif(vecPotFunc=='linear'):
   A0 = 8 * np.pi / (3 * np.sqrt(3) * a**2 * (2 * nr - 3) )
 elif(vecPotFunc=='constant'):
   A0 = 6 * np.pi / (3 * np.sqrt(3) * a)
-  A0 = 2.75 / a
+  A0 = 2.55 / a
 elif(vecPotFunc=='tanh'):
   A0 = 2 * np.pi / (3 * np.sqrt(3) * a)
   A0 = 6 * np.pi / (3 * np.sqrt(3) * a)
