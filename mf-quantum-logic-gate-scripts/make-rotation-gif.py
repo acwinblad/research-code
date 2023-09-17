@@ -18,14 +18,14 @@ t = 1
 delta = t
 mu = 1.6*t
 nr = 50
-w = 3
+w = 1
 
 vecPotFunc = 'step-function'
 #vecPotFunc = 'linear'
 vecPotFunc = 'constant'
 #vecPotFunc = 'tanh'
 
-latticePlotPath, filepath = htm.create_directory_path('rotation-' + vecPotFunc, mu, nr, w)
+latticePlotPath, filepath = htm.create_directory_path('braiding-' + vecPotFunc, mu, nr, w)
 
 frames = []
 for file_name in sorted(os.listdir(filepath)):
@@ -37,6 +37,6 @@ for file_name in sorted(os.listdir(filepath)):
     frames.append(imageio.imread(file_path_re))
     os.remove(file_path_re)
 
-imageio.mimsave('./rotation-w-' + str(w) + '-' + vecPotFunc + '-vector-potential.gif', frames, fps = 3, loop=1)
+imageio.mimsave('./braiding-w-' + str(w) + '-' + vecPotFunc + '-vector-potential.gif', frames, fps = 3, loop=1)
 
 

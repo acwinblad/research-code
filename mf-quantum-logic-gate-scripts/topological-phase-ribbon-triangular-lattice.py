@@ -9,11 +9,11 @@ pi = np.pi
 t = 1.0
 delta = t
 a = 1
-n = 1
-nA = 16*25
+n = 5
+nA = 8*25
 nmu = nA
 Af = 4*pi / (np.sqrt(3)*a)
-mui = -3
+mui = -5
 muf = 3
 
 d1 = a
@@ -102,7 +102,7 @@ for j, avals in enumerate(Avalues):
 MN1 = MN0[0,:,:]*MN0[1,:,:]
 MN2 = MN1pi6[0,:,:]*MN1pi6[1,:,:]
 TP = MN1+MN2
-np.savetxt('./data/majorana-number-1pi6-n-1.txt', TP, fmt='%1d')
+np.savetxt('./data/majorana-number-1pi6-n-5.txt', TP, fmt='%1d')
 plt.imshow(TP, cmap='Blues_r')
 #plt.imshow(TP, cmap='Blues_r', interpolation='bicubic')
 #plt.tight_layout()

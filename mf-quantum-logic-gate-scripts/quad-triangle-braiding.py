@@ -62,7 +62,7 @@ nnlist, nnphaseFtr, nnphiParams = htm.nearest_neighbor_list(a, coords)
 
 # Loop through the varying angles of t for the vector potential
 nE = 1*6 # must be even?
-nt = 1*5
+nt = 1*6
 ti = 1*np.pi/6
 tf = 1*np.pi/3
 tvals = np.linspace(ti,tf,nt)

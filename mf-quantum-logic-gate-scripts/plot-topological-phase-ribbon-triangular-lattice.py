@@ -9,7 +9,7 @@ mui = -5
 muf = 3
 Af = 4*np.pi / (np.sqrt(3) *a)
 
-tp = np.loadtxt('./data/majorana-number-1pi6-n-3.txt')
+tp = np.loadtxt('./data/majorana-number-1pi6-n-5.txt')
 
 plt.rcParams.update({'font.size':13})
 
@@ -30,7 +30,7 @@ plt.gca().xaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:1.0f}"))
 
 plt.imshow(tp, cmap='Blues_r', extent=[xmin,xmax,ymin,ymax])
 plt.tight_layout()
-plt.savefig('./data/figures/topological-phase-diagram-1pi6-n-3.pdf')
+plt.savefig('./data/figures/topological-phase-diagram-1pi6-n-5.pdf')
 plt.close()
 plt.clf()
 plt.cla()

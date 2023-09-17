@@ -73,7 +73,7 @@ gs = np.round(np.dot(ug,nvec), decimals=12)
 
 projgs = gs
 
-nphi = 10000
+nphi = 100000
 phi = np.array([[0, -pi/3, -pi/3], [-pi/3, -pi/3, 0], [-pi/3, 0, -pi/3], [0, -pi/3, -pi/3]])
 
 tteng = np.zeros((3*(nphi-1),8))

@@ -24,12 +24,12 @@ nr = 50
 
 vecPotFunc = 'step-function'
 #vecPotFunc = 'linear'
-vecPotFunc = 'constant'
+#vecPotFunc = 'constant'
 #vecPotFunc = 'tanh'
 
 if(vecPotFunc=='step-function'):
   A0 = 2 * np.pi / (3*np.sqrt(3) * a)
-  #A0 = 2.75 / a
+  A0 = 2.75 / a
 elif(vecPotFunc=='tanh'):
   A0 = 2 * np.pi / (3 * np.sqrt(3) * a)
   A0 = 2.75 / a
@@ -62,8 +62,8 @@ nnlist, nnphaseFtr, nnphiParams = htm.nearest_neighbor_list(a, coords)
 
 # Loop through the varying angles of t for the vector potential
 nE = 1*4 # must be even?
-nt = 3*50
-tf = np.pi/1
+nt = 1*50
+tf = 3*np.pi/3
 tvals = np.linspace(0,tf,nt+1)
 evt = np.zeros((2*nE,nt+1))
 evtt = np.zeros((nt+1))
@@ -100,7 +100,7 @@ for k, angle in enumerate(tvals):
   ## Save data
   #np.savetxt('./data/hollow-triangle-energy.txt', eng, fmt='%1.8e')
 
-htm.plot_hollow_triangle_wavefunction_circles(a, width, nr, coords, tvals, evtt, vgs0t, vgs1t, filepath)
+#htm.plot_hollow_triangle_wavefunction_circles(a, width, nr, coords, tvals, evtt, vgs0t, vgs1t, filepath)
 if(plotSpectral):
   htm.plot_hollow_triangle_rotation_spectral_flow(mu, nr, A0, width, nE, tvals, evt, filepath
       )
