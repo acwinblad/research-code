@@ -25,7 +25,7 @@ lsq = J**2/9 + K**2/3
 
 lf = 2*np.pi/(a*kf)
 En = np.matrix(np.real(mu*np.sqrt(1+lf**4*lsq**2 - lf**2*(2+(lf*delp/kf)**2)*lsq+0.j)))
-  
+
 plt.imshow(En, aspect='auto')
 plt.colorbar()
 plt.show()

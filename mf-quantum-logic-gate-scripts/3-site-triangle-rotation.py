@@ -70,7 +70,7 @@ for i, rot in enumerate(angle):
   bdg[5,4] = -np.conjugate(bdg[2,1])
 
   # Solve the eigenvalue problem for energies only
-  eng, vec = np.linalg.eigh(0.5*bdg)
+  eng, vec = np.linalg.eigh(bdg)
   vec = np.real(np.multiply(vec, np.conj(vec)))
 
   eba0[:,i] = eng[0:n]

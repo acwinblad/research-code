@@ -16,12 +16,12 @@ plotSpectral = True
 # Define parameters
 t = 1
 delta = t
-mu = 1.6*t
+mu = 0.0*t
 a = 1
-nr = 50
+nr = 26
 
 vecPotFunc = 'step-function'
-vecPotFunc = 'linear'
+#vecPotFunc = 'linear'
 #vecPotFunc = 'constant'
 #vecPotFunc = 'tanh'
 if(vecPotFunc=='step-function'):
@@ -30,18 +30,17 @@ if(vecPotFunc=='step-function'):
   A0 = 2*np.pi / (3 * np.sqrt(3) * a)
 elif(vecPotFunc=='linear'):
   A0 = 8 * np.pi / (3 * np.sqrt(3) * a**2 * (2 * nr - 3) )
-  #A0 = 8 * np.pi / (3 * np.sqrt(3) * a**2 )
 elif(vecPotFunc=='constant'):
   A0 = 6 * np.pi / (3 * np.sqrt(3) * a)
 elif(vecPotFunc=='tanh'):
-  A0 = 6 * np.pi / (3 * np.sqrt(3) * a)
+  A0 = 2 * np.pi / (3 * np.sqrt(3) * a)
 else:
   print('pick a vector potential type from the following: step-function, linear, tanh')
 
 
 # The inner boundary is dependant on the width we want and bounded by the outer boundary.
 # Define the width first then we can determine the the number of rows of the inner boundary.
-width = 3
+width = 0
 width *= a
 # Build the hollow triangle lattice
 hollowtri, innertri = htm.build_hollow_triangle(a, nr, width)
@@ -77,50 +76,37 @@ for j in range(len(nnlist)):
 bdg[0:n, 0:n] = -mu*np.eye(n)
 bdg[n:2*n, n:2*n] = mu*np.eye(n)
 
-# Loop through the varying values of B for the vector potential
-nE = 2*2 # must be even?
-nk = 45
-Amults = int(2)
-Amax = Amults * A0
-if(Amults>1):
-  nkk = Amults*nk+1
-  avals = np.linspace(0,Amax,nkk)
-  eva = np.zeros((2*nE,nkk))
-  evaa = np.zeros((nkk))
-  #vgs0a = np.zeros((2*n, nkk))
-  #vgs1a = np.zeros((2*n, nkk))
-  wf = np.zeros((n, nkk))
-else:
-  avals = np.linspace(0,Amax,nk)
-  eva = np.zeros((2*nE,nk))
-  evaa = np.zeros((nk))
-  #vgs0a = np.zeros((2*n, nk))
-  #vgs1a = np.zeros((2*n, nk))
-  wf = np.zeros((n, nk))
+# Construct the BdG Hamiltonian for varying vector potential strengths avalues
+for j in range(len(nnlist)):
+  for nnl, l in enumerate(nnlist[j]):
+    phiftr = htm.calc_phi(a, coords[j,0], coords[l,0], coords[j,1], coords[l,1], nnphiParams[j][nnl][0], nnphiParams[j][nnl][1], 0, vecPotFunc)
+    bdg[j, l] = -t * phiftr**A0
+    bdg[j+n, l+n] = -np.conjugate(bdg[j, l])
 
-for k,values in enumerate(avals):
-  # Construct the BdG Hamiltonian for varying vector potential strengths bvalues
-  for j in range(len(nnlist)):
-    for nnl, l in enumerate(nnlist[j]):
-      phiftr = htm.calc_phi(a, coords[j,0], coords[l,0], coords[j,1], coords[l,1], nnphiParams[j][nnl][0], nnphiParams[j][nnl][1], 0, vecPotFunc)
-      bdg[j, l] = -t * np.exp(1.0j * phiftr * values)
-      bdg[j+n, l+n] = -np.conjugate(bdg[j, l])
+# Solve the eigenvalue problem for energies only
+eng, vec = np.linalg.eigh(bdg, UPLO = 'U')
+vec = np.real(np.multiply(vec, np.conj(vec)))
+vgs0a = vec[:,n]
+vgs1a = vec[:,n+1]
 
-  # Solve the eigenvalue problem for energies only
-  eng, vec = np.linalg.eigh(bdg, UPLO = 'U')
-  eva[:,k] = eng[n-nE:n+nE]
-  evaa[k] = eng[n]
-  vec = np.real(np.multiply(vec, np.conj(vec)))
-  wf[:,k] = vec[0:n,n] + vec[n:2*n,n] + vec[0:n,n+1] + vec[n:2*n,n+1]
-
-  # Let's only plot the wavefunction of the states if we have a MF or MF-like state for a given vector potential strength
-
-#np.savetxt('./data/hollow-triangle-bdg-copy.txt', bdg, fmt='%1.2e')
-  ## Save data
-  #np.savetxt('./data/hollow-triangle-energy.txt', eng, fmt='%1.8e')
-
-if(plotWavefunction):
-  htm.plot_hollow_triangle_wavefunction_circles(a, width, nr, coords, avals, evaa, wf, filepath)
 
 if(plotSpectral):
-  htm.plot_hollow_triangle_spectral_flow(mu, nr, A0, width, nE, avals, eva, filepath)
+  plt.figure()
+  plt.xlim(0,1)
+  plt.ylabel('Energy',fontsize=12)
+  plt.tick_params(
+    axis='x',          # changes apply to the x-axis
+    which='both',      # both major and minor ticks are affected
+    bottom=False,      # ticks along the bottom edge are off
+    top=False,         # ticks along the top edge are off
+    labelbottom=False) # labels along the bottom edge are off
+  plt.ylim(-0.2,0.2)
+  xarr = [0,1]
+  for i in range(2*n):
+    plt.plot(xarr,[eng[i],eng[i]], 'C0')
+  plt.tight_layout()
+  plt.savefig('./data/figures/full-triangle-spectral-flow.pdf')
+  #plt.show()
+  plt.close()
+
+

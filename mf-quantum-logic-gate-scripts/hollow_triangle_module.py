@@ -132,7 +132,7 @@ def calc_phase_factor(_dx, _dy):
 def calc_phi(_a, _xj, _xl, _yj, _yl, _dx, _dy, _t, _vecPotFunc):
   #_t = _t % np.pi
   m = _dy / _dx
-  b = _yl - m * _xl
+  b = _yj - m * _xj
   ct = np.cos(_t)
   st = np.sin(_t)
   rotdl = m * ct - st
@@ -148,11 +148,11 @@ def calc_phi(_a, _xj, _xl, _yj, _yl, _dx, _dy, _t, _vecPotFunc):
 
   elif(_vecPotFunc == 'tanh'):
     ## Needs numerical integration
-    alpha = 1000
-    xarr = np.linspace(_xj, _xl, 4001)
+    w = 0.5 * _a
+    xarr = np.linspace(_xj, _xl, 2001)
     yarr = m * xarr + b
     x1 = xarr * ct + yarr * st
-    integrand = -np.tanh(alpha * x1) * rotdl
+    integrand = -np.tanh(x1 / (2 * w)) * rotdl
     phi = np.trapz(integrand,xarr)
 
   elif(_vecPotFunc == 'linear'):
@@ -163,7 +163,7 @@ def calc_phi(_a, _xj, _xl, _yj, _yl, _dx, _dy, _t, _vecPotFunc):
     ## Integral is done by hand
     phi = rotdl * _dx
 
-  return np.exp(1.0j * phi)
+  return phi
 
 # Lists the nearest neighbor as an integer list
 def nearest_neighbor_list(_a, _coords):
@@ -222,7 +222,7 @@ def clone_width_one_interior_points(_a, _coords):
 
   return clonedCoords, dups
 
-def plot_hollow_triangle_wavefunction_circles(_a, _width, _nr, _coords, _tvals, _energy, _states0, _states1, _filepath):
+def plot_hollow_triangle_wavefunction_circles(_a, _width, _nr, _coords, _tvals, _energy, _wf, _filepath):
   plt.rcParams.update({'font.size': 16})
   x = _coords[:,0]
   y = _coords[:,1]
@@ -237,10 +237,7 @@ def plot_hollow_triangle_wavefunction_circles(_a, _width, _nr, _coords, _tvals, 
   paddins = 4
   inssize = 1.2
 
-  vgs0 = _states0[0:n,:] + _states0[n:2*n,:]
-  vgs1 = _states1[0:n,:] + _states1[n:2*n,:]
-  wavefunction = vgs0+vgs1
-  wfmax = np.max(wavefunction)
+  wfmax = np.max(_wf)
 
   vmin = 0
   vmax = wfmax
@@ -265,7 +262,7 @@ def plot_hollow_triangle_wavefunction_circles(_a, _width, _nr, _coords, _tvals, 
 
     #plt.triplot(triang, '.k', markersize=1.0, markeredgecolor='none')
     #vmax = np.max(wavefunction[:,j])
-    im = plt.scatter(x,y, s=(301/(nl+2*padd))**2 * (20*wavefunction[:,j]+0.75)**2, c=wavefunction[:,j], cmap='plasma', linewidths=0, vmin=vmin, vmax=vmax, alpha=0.9)
+    im = plt.scatter(x,y, s=(301/(nl+2*padd))**2 * (20*_wf[:,j]+0.75)**2, c=_wf[:,j], cmap='plasma', linewidths=0, vmin=vmin, vmax=vmax, alpha=0.9)
     #im = plt.scatter(x,y, s=(301/(_nr+1))**2, c=wavefunction[:,j], cmap='plasma', linewidths=0, vmin=vmin, vmax=vmax)
     #im = plt.scatter(x,y+1.5, s=(201/(_nr+1))**2, c=wavefunction[:,j], cmap='plasma', linewidths=0, vmin=vmin, vmax=vmax)
     divider = make_axes_locatable(ax)
@@ -278,7 +275,7 @@ def plot_hollow_triangle_wavefunction_circles(_a, _width, _nr, _coords, _tvals, 
     axins.set_xticks([])
     axins.set_yticks([])
     axins.set_aspect('equal')
-    axins.scatter(x,y, s = (73*inssize/(_width-_a + 1.5*paddins))**2 * (20*wavefunction[:,j]+0.75)**2, c = wavefunction[:,j], cmap='plasma', linewidths=0, vmin=vmin, vmax=vmax, alpha=0.9)
+    axins.scatter(x,y, s = (73*inssize/(_width-_a + 1.5*paddins))**2 * (20*_wf[:,j]+0.75)**2, c = _wf[:,j], cmap='plasma', linewidths=0, vmin=vmin, vmax=vmax, alpha=0.9)
     axins.set_xlim(xmin-_a*paddins/2, xmin + (_width - _a + _a*paddins))
     axins.set_ylim(ymin-_a*paddins/2, ymin + (_width - _a + _a*paddins))
     if(_width == 0):
@@ -292,7 +289,7 @@ def plot_hollow_triangle_wavefunction_circles(_a, _width, _nr, _coords, _tvals, 
     axins2.set_xticks([])
     axins2.set_yticks([])
     axins2.set_aspect('equal')
-    axins2.scatter(x,y, s = (73*inssize/(_width-_a + 1.5*paddins))**2 * (20*wavefunction[:,j]+0.75)**2, c = wavefunction[:,j], cmap='plasma', linewidths=0, vmin=vmin, vmax=vmax, alpha=0.9)
+    axins2.scatter(x,y, s = (73*inssize/(_width-_a + 1.5*paddins))**2 * (20*_wf[:,j]+0.75)**2, c = _wf[:,j], cmap='plasma', linewidths=0, vmin=vmin, vmax=vmax, alpha=0.9)
     axins2.set_xlim(xmax - (_width - _a + _a*paddins), xmax + _a*paddins/2)
     axins2.set_ylim(ymin-_a*paddins/2, ymin + (_width - _a + _a*paddins) )
     if(_width == 0):
@@ -389,10 +386,11 @@ def plot_hollow_triangle_spectral_flow(_mu, _nr, _A0, _width, _nE, _avals, _eva,
   plt.xlim(xmin,xmax)
   plt.ylim(ymin, ymax)
   plt.xlabel(r"$A$", fontsize=20)
-  plt.xticks(np.linspace(xmin, np.int(xmax), np.int(xmax)+1))
   plt.ylabel('Energy (t)', fontsize=18)
   plt.locator_params(axis='y', nbins=5)
-  plt.gca().xaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:1.2f}"))
+  if(xmax>1):
+    plt.xticks(np.linspace(xmin, int(xmax), int(xmax)+1))
+    plt.gca().xaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:1.2f}"))
 
   for i in range(2*_nE):
     plt.plot(_avals,_eva[i,:], 'C0')
@@ -406,28 +404,29 @@ def plot_hollow_triangle_spectral_flow(_mu, _nr, _A0, _width, _nE, _avals, _eva,
 def plot_hollow_triangle_rotation_spectral_flow(_mu, _nr, _A0, _width, _nE, _avals, _eva, _filepath):
   plt.rcParams.update({'font.size': 16})
   #ymax = 1.01*np.max(_evb[:,:])
-  ymax = 0.2
+  ymax = 0.4
   ymin = -ymax
   xmax = _avals[-1]
   xmin = _avals[0]
 
   plt.figure()
-  #plt.xlim(xmin/xmax,xmax/xmax)
-  plt.xlim(xmin,xmax)
+  plt.xlim(xmin/xmax,xmax/xmax)
+  #plt.xlim(xmin,xmax)
   plt.ylim(ymin, ymax)
-  #plt.xlabel(r"$\varphi$ ($\pi$)", fontsize=20)
-  plt.xlabel(r"$\varphi$", fontsize=20)
-  #plt.xticks(np.linspace(xmin,xmax, 5)/xmax)
-  plt.xticks(np.linspace(xmin,xmax, 5))
+  plt.xlabel(r"$\varphi$ ($\pi$)", fontsize=20)
+  #plt.xlabel(r"$\varphi$", fontsize=20)
+  plt.xticks(np.linspace(xmin,xmax, 5)/xmax)
+  #plt.xticks(np.linspace(xmin,xmax, 5))
   plt.ylabel('Energy (t)', fontsize=18)
   plt.locator_params(axis='y', nbins=5)
   plt.gca().xaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:1.2f}"))
 
   for i in range(2*_nE):
-    plt.plot(_avals,_eva[i,:], 'C0')
+    #plt.plot(_avals,_eva[i,:], 'C0')
+    plt.plot(_avals/xmax,_eva[i,:], 'C0')
 
-  #plt.axvline(x=1/3, color='k', linestyle = "--")
-  #plt.axvline(x=2/3, color='k', linestyle = "--")
+  plt.axvline(x=1/3, color='k', linestyle = "--")
+  plt.axvline(x=2/3, color='k', linestyle = "--")
   #plt.plot(0.0,0,"s",c='C1', markersize=10, clip_on=False, zorder=100)
   #plt.plot(1/6,0,"o",c='C1', markersize=10)
   #plt.plot(1/3,0,"D",c='C1', markersize=10)

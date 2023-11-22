@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import imageio
 
 # Define parameters
-t = 1
+t = 2
 delta = t
 mu = 0.0*t
 a = 1
@@ -60,7 +60,7 @@ for i, (pp12, pp13, pp23) in enumerate(zip(p12, p13, p23)):
   bdg[5,4] = -np.conjugate(bdg[2,1])
 
   # Solve the eigenvalue problem for energies only
-  eng, vec = np.linalg.eigh(0.5*bdg)
+  eng, vec = np.linalg.eigh(bdg)
   vec = np.real(np.multiply(vec, np.conj(vec)))
 
   eba0[:,i] = eng[0:n]
