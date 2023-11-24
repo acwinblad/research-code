@@ -17,7 +17,7 @@ m = 0.067 * m_e # GaAs/AlGaAs: m = 0.067m_e
 #m = 1.0 * m_e # [MeV/c^2]
 h = hbar**2 / (2 * m * a**2) # hopping value for square lattice
 print(h)
-k = 0 # Momentum space momentum value
+k = 0 # [m^-1] Momentum space wavenumber
 ka = k*a
 
 # Laser parameters
@@ -39,14 +39,13 @@ Nr = 2*rc+1
 xj = np.linspace(-xm, xm, Nr)
 Kxj = K*xj
 
-# Range of Electric field strength and
 phimin = 0
 phimax = 1e9 # unitless
 phimax = Estrength*a/hw # unitless
+print('Phimax ', phimax)
+
 nphi = 100
 phi0 = np.linspace(phimin,phimax,nphi)
-
-# Create empty arrays
 #energy = np.zeros( (Nm*Nr, nphi) )
 energy = np.zeros( (Nr, nphi) )
 H = np.zeros( (Nm,Nr,Nr) )
@@ -59,11 +58,10 @@ for i, phi in enumerate(phi0):
   Q = np.zeros( (Nm*Nr,Nm*Nr) )
   for n in range(Nm):
     H[n] = -2*h*np.diag(sp.jv(n,phi*np.cos(Kxj)),k=0)*np.cos(ka-n*pi/2) - h*np.diag(sp.jv(n,phi*np.ones(Nr-1)),k=1) - h*(-1)**n * np.diag(sp.jv(n,phi*np.ones(Nr-1)),k=-1)
-    # Quick way to fill the Q matrix is to use kronecker functions for the block diagonals (and subdiagonals H_1, H_2, ...)
-    Q += np.kron(np.diag(np.ones(Nm-n),k=-n),H[n])
-
-  # Quickly apply the modes along the diagonal of Q
-  Q += np.kron(np.diag(nhw,k=0),np.eye(Nr))
+    if(n != 0):
+      Q += np.kron(np.diag(np.ones(Nm-n),k=-n),H[n])
+    else:
+      Q += np.kron(np.eye(Nm),H[0]) + np.kron(np.diag(nhw,k=0),np.eye(Nr))
 
   eng = np.linalg.eigvalsh(Q, UPLO = 'L')
   energy[:,i] = eng[mc*Nr:(mc+1)*Nr]
