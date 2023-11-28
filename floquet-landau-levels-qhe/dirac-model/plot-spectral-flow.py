@@ -7,6 +7,7 @@ energy = np.loadtxt('./data/eng-matrix.txt')
 rows, columns = np.shape(energy)
 
 plt.figure()
+plt.ylim(-1,1)
 for i in range(rows):
   plt.plot(energy[i,:])
 

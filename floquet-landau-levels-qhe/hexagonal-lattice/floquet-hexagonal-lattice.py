@@ -18,7 +18,7 @@ s1 = np.sin(tau)
 c2 = np.cos(2*tau)
 
 # number of modes
-mc = 8
+mc = 5
 Nm = 2*mc+1
 marr = np.arange(0, Nm, 1) - mc
 
@@ -35,29 +35,35 @@ vf = 1E6 # fermi velocity 10^6 m/s
 
 # effective mass of electron
 m_e = 0.51E6 / c**2 # 0.51 MeV/c^2
-m = 0.012 * m_e
+m = 1.0 * m_e
 
 # incoming light and wavenumber
 hw = 191E-3 # meV
-k = hw / (hbar * c)
+d = 100E-9
+K = 2*np.pi/d
 
 # lattice constant
-a = 0.246E-9 # nm
+a = 0.142E-9 # nm
+
+k = 0
 ka = k*a
 
 # hopping parameters in eV
-t = ( 2 * hbar * vf ) / ( 3 * a )
-E = 5E8 # V/m
-phimax = E*a/hw
+#t = ( 2 * hbar * vf ) / ( 3 * a )
+t = 2.8
+print(t)
+Emax = 3E7 # V/m
+phimax = Emax*a/hw
 C = 1 - ( vf * hbar * phimax ) / ( a * hw )
-B = ( k * hbar**3 * vf**2 * phimax**2 ) / ( 4 * a**3 * hw**2 * C )
-alpha = ( 3*np.sqrt(3) * k * hbar**2 * vf**2 ) / ( 8 * a * hw**2 * C )
+B = ( K * hbar**3 * vf**2 * phimax**2 ) / ( 4 * a**3 * hw**2 * C )
+alpha = ( 3*np.sqrt(3) * K * hbar**2 * vf**2 ) / ( 8 * a * hw**2 * C )
 phimin = 0.0
-nphi = 50
-phi0 = np.array( [ (phimin + i/nphi)**(1/3) for i in range(nphi) ] ) * phimax
+nphi = 100
+phi0 = np.array( [ (phimin + i/nphi)**(1/1) for i in range(nphi) ] ) * phimax
+phi0 = np.linspace(phimin,phimax,nphi)
 
 print('m =', m)
-print('K =', k)
+print('K =', K)
 print('ka= ', ka)
 print('t= ', t)
 print('B= ', B)
@@ -79,13 +85,13 @@ def hblock(_p, _n):
   hnblock = np.zeros( [4*Ns, 4*Ns], "complex" )
 
   for ridx, rval in enumerate(rarr):
-    tmp = np.outer([s1,],[jjdifx,]) + 0.5*np.outer([c2,],[jjdify*np.sin(ka*(rval*np.sqrt(3)+jjavgx)),])
+    tmp = np.outer([s1,],[jjdifx,]) + 0.5*np.outer([c2,],[jjdify*np.sin(K*a*(rval*np.sqrt(3)+jjavgx)),])
     tmp = np.exp(-1.0j * ( _p*tmp + _n*np.outer([tau,],[np.ones(3),]) ) )
     tmp = -t*np.trapz(tmp, x=tau, axis=0) / (2*np.pi)
     hnblock[4*ridx:4*(ridx+1),4*ridx:4*(ridx+1)] = np.diag(tmp, k=1) + np.diag(tmp.conjugate(), k=-1)
 
   for ridx, rval in enumerate(rarr[1:]):
-    tmp = np.outer([s1,],[jp1difx,]) + 0.5*np.outer([c2,],[jp1dify*np.sin(ka*((2*rval+1)*np.sqrt(3)/2+jp1avgx)),])
+    tmp = np.outer([s1,],[jp1difx,]) + 0.5*np.outer([c2,],[jp1dify*np.sin(K*a*((2*rval+1)*np.sqrt(3)/2+jp1avgx)),])
     tmp = np.exp(-1.0j * ( _p*tmp + _n*np.outer([tau,],[np.ones(3),]) ) )
     tmp = -t*np.trapz(tmp, x=tau, axis=0) / (2*np.pi)
 

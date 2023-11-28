@@ -6,30 +6,29 @@ import matplotlib.ticker as mtick
 import glob
 
 # load configuration values
-config = np.loadtxt('./data/config-floquet.txt')
+config = np.loadtxt('./data/config.txt')
 rc = int(config[0])
 mc = int(config[1])
-t = float(config[2])
-alpha = float(config[3])
-phimin = config[4]
-phimax = config[5]
-nphi = int(config[6])
+h = float(config[2])
+phimin = float(config[3])
+phimax = float(config[4])
+nphi = int(config[5])
 #phi = np.array([(i/nphi)**(1/2) for i in range(nphi)])*phimax
 strnphi = str(nphi)
 
-ns = 2*rc+1
+nr = 2*rc+1
 nm = 2*mc+1
-m0 = (mc-0)*4*ns
-mf = (mc+1)*4*ns
+m0 = (mc-0)*nr
+mf = (mc+1)*nr
 
 # load calculated values and states
 energy = np.loadtxt('./data/eng-matrix.txt')
 stateslist = sorted( glob.glob( './data/eigenstate-phi-*.txt') )
 
 # calculate weight/projection on 0th order Block
-weight = np.zeros( (nphi, 4*ns*nm) )
+weight = np.zeros( (nphi, nr*nm) )
 for i, statefilename in enumerate(stateslist):
-  states = np.loadtxt( statefilename, dtype=complex, skiprows=m0, max_rows=rc*4 )
+  states = np.loadtxt( statefilename, dtype=complex, skiprows=m0, max_rows=nr )
   weight[i,:] = np.diag( np.real( np.matmul( states.conj().T, states ) ) , k=0 )
 
 #wavg = np.average(weight)
@@ -41,8 +40,8 @@ for i, statefilename in enumerate(stateslist):
 # calculate a weighted/projected density of states as a function of phi
 Emax = np.max(energy)
 Emin = np.min(energy)
-Emax = +0.1*t
-Emin = -0.1*t
+Emax = +0.0*h
+Emin = -4.0*h
 nE = 2*nphi
 dE = (Emax-Emin)/(nE-1)
 E = np.array([i*dE+Emin for i in range(nE)])
@@ -62,12 +61,9 @@ fig, ax = plt.subplots(1,1)
 
 # set x-axis
 xticks = np.linspace(-1,1,5, endpoint=True)
-#xlabelarray = np.linspace( alpha * phimin**3, alpha * phimax**3, 5, endpoint=True)
-#xlabelarray = np.linspace( phimin, phimax**3, 5, endpoint=True)
-xlabelarray = np.linspace( phimin, phimax**1, 5, endpoint=True)
+xlabelarray = np.linspace( phimin, phimax, 5, endpoint=True)
 ax.set_xticks(xticks)
 ax.set_xticklabels(['%1.2e' % val for val in xlabelarray])
-#ax.set_xlabel('$\phi_{B_{eff}} = %1.6f\phi_E^3$' % alpha)
 ax.set_xlabel('$\phi_E$')
 
 # set y-axis
@@ -78,7 +74,7 @@ ax.set_yticklabels(['%1.2f' % val for val in ylabelarray])
 ax.set_ylabel('$E(\phi_E)$')
 
 # plot and save figures
-img = ax.imshow( ( np.flipud(wE[1:].transpose()) )**(0.5), interpolation='spline16', cmap='Blues', extent=[-1,1,-1,1])
+img = ax.imshow( ( np.flipud(wE[1:].transpose()) )**(0.5), interpolation='nearest', cmap='Blues', extent=[-1,1,-1,1])
 plt.savefig('./figures/dos-projection.pdf', bbox_inches='tight')
 plt.savefig('./figures/dos-projection.png', bbox_inches='tight')
 
@@ -87,15 +83,16 @@ img = ax.imshow( (np.flipud(gE[1:].transpose()) )**(1.0), interpolation='spline1
 plt.savefig('./figures/dos-full.pdf', bbox_inches='tight')
 
 
+# This section only works when hbar*w >> h (hopping) to have well separated bands
 plt.figure()
 plt.tight_layout()
 #plt.grid("True")
 plt.xlim(0,phimax)
-plt.ylim(-0.01,1)
-#plt.xlabel('$\phi_{B_{eff}} = %1.6f\phi_E^3$' % alpha)
+plt.ylim(Emin, 0)
 plt.xlabel('$\phi_{B_{eff}} = \phi_E$')
 plt.ylabel('$E(\phi_E)$')
-for i in range(10):
-  plt.plot(np.linspace(0,alpha*phimax**3,nphi),energy[ns*nm*2+i,:])
+x = np.linspace(phimin,phimax,nphi)
+for i in range(2*nr):
+  plt.plot(x,energy[nr*(mc+0)+i,:])
 plt.savefig('./figures/line-full.pdf', bbox_inches='tight')
 plt.savefig('./figures/line-full.png', bbox_inches='tight')
