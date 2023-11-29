@@ -21,18 +21,18 @@ m = m_e # [MeV/c^2]
 v_f = 1E6 # [m/s] fermi velocity for graphene
 h = 2*v_f*hbar/(3*a) # [eV] hopping energy for graphene based on formula? This value is close to the 2.8 eV
 h = 2.8 # [eV] hopping energy for graphene is 2.8 eV
-k = 0*pi/(9*a) # [m^-1] Momentum space wavenumber Probably shouldn't be zero for graphene
+k = 0.0*pi/(3*a) # [m^-1] Momentum space wavenumber Probably shouldn't be zero for graphene
 ka = k*a
 
 # Laser parameters
 hw = 191e-3 # [meV]
-Emax = 3e7 # V/m
+Emax = 5e8 # V/m
 d = 100E-9 # [m] Spatial period of the electric field of laser in x direction, make sure d>>a and not necessarily integer multiple
 K = 2*pi/d # Spatial wavenumber of laser light in x direction
 
 # Matrix cutoffs
 # Number of modes
-mc = 1
+mc = 2
 Nm = 2*mc+1
 nhw = np.arange(-mc,mc+1,1)*hw
 
@@ -43,7 +43,7 @@ Nr = 2*rc+1
 xj = np.linspace(-xm, xm, Nr)
 
 phimin = 0
-phimax = 1e9 # unitless
+#phimax = 1e9 # unitless
 phimax = Emax*a/hw # unitless
 
 nphi = 100
@@ -60,28 +60,27 @@ c2 = np.cos(2*tau)
 # Coordinates for respective hopping terms
 dx = (np.sqrt(3)/2) * np.array([1,0,1,1,1,0])
 dy = (1/2) * np.array([1,2,1,-1,-1,2])
-xavg = (np.sqrt(3)/4) * np.array([1,2,3,3,5,4])
+xavg = (np.sqrt(3)*a/4) * np.array([1,2,3,3,5,4])
 Adotdl = np.zeros( (6, Nr, np.size(tau)) )
 for i in range(6):
-  Adotdl[i] = -dx[i]*s1 + 0.5 * np.outer(dy[i]*np.sin(K*(xj+a*xavg[i])), c2)
+  Adotdl[i] = -dx[i]*s1 + 0.5 * np.outer(dy[i]*np.sin(K*(xj+xavg[i])), c2)
 
 # Compute the indices for H_n and form the block matrix
 def create_H_n(_n, _phi, _ka):
-  hjla1b1 = -h* np.trapz(np.exp(1.0j * _phi * (Adotdl[0] - _n*tau) ), x=tau, axis=1) / (2*pi)
-  hjlb1a2 = -h* np.trapz(np.exp(1.0j * _phi * (Adotdl[1] - _n*tau) ), x=tau, axis=1) / (2*pi)
-  hjla2b2 = -h* np.trapz(np.exp(1.0j * _phi * (Adotdl[2] - _n*tau) ), x=tau, axis=1) / (2*pi)
+  hjla1b1 = -h* np.trapz(np.exp(1.0j * (_phi * Adotdl[0] - _n*tau) ), x=tau, axis=1) / (2*pi)
+  hjlb1a2 = -h* np.trapz(np.exp(1.0j * (_phi * Adotdl[1] - _n*tau) ), x=tau, axis=1) / (2*pi)
+  hjla2b2 = -h* np.trapz(np.exp(1.0j * (_phi * Adotdl[2] - _n*tau) ), x=tau, axis=1) / (2*pi)
 
-  hjp1lb1a1 = -h* np.trapz(np.exp(1.0j * _phi * (Adotdl[3] - _n*tau) ), x=tau, axis=1) / (2*pi)
-  hjp1lb2a2 = -h* np.trapz(np.exp(1.0j * _phi * (Adotdl[4] - _n*tau) ), x=tau, axis=1) / (2*pi)
-  hjp1lp1b2a1 = -h* np.trapz(np.exp(1.0j * _phi * (Adotdl[5] - 3*_ka - _n*tau) ), x=tau, axis=1) / (2*pi)
+  hjp1lb1a1 = -h* np.trapz(np.exp(1.0j * (_phi * Adotdl[3] - _n*tau) ), x=tau, axis=1) / (2*pi)
+  hjp1lb2a2 = -h* np.trapz(np.exp(1.0j * (_phi * Adotdl[4] - _n*tau) ), x=tau, axis=1) / (2*pi)
+  hjp1lp1b2a1 = -h* np.trapz(np.exp(1.0j * (_phi * Adotdl[5] - 3*_ka - _n*tau) ), x=tau, axis=1) / (2*pi)
 
   Hb = np.zeros((4*Nr,4*Nr), dtype='complex')
 
   for xidx, xval in enumerate(xj):
     Hb[4*xidx:4*(xidx+1),4*xidx:4*(xidx+1)] = np.array([[0,hjla1b1[xidx],0,0],[0,0,hjlb1a2[xidx],0],[0,0,0,hjla2b2[xidx]],[0,0,0,0]])
-  for xidx, xval in enumerate(xj[1:]):
+  for xidx, xval in enumerate(xj[:-1]):
     Hb[4*xidx:4*(xidx+1),4*(xidx+1):4*(xidx+2)] = np.array([[0,0,0,0],[hjp1lb1a1[xidx],0,0,0],[0,0,0,0],[hjp1lp1b2a1[xidx],0,hjp1lb2a2[xidx],0]])
-  print()
 
   Hb = Hb + Hb.conj().T
   return Hb
@@ -92,7 +91,6 @@ for i, phi in enumerate(phi0):
 
   # Calculate individual block matrices for given phi0 and construct Q matrix
   # Clear the Q matrix since we will be adding to the matrix
-  #print()
   Q = np.zeros( (Nm*4*Nr,Nm*4*Nr) , dtype = 'complex')
   for n in range(Nm):
     # To construct the H_n matrices we must numerically solve the time domain Fourier transform for each matrix index

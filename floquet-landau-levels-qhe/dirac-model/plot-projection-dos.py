@@ -32,6 +32,11 @@ for i, statefilename in enumerate(stateslist):
   weight[i,:] = np.diag( np.real( np.matmul( states.conj().T, states ) ) , k=0 )
 
 #wavg = np.average(weight)
+#weight = weight[0::4,:]
+#weight[:,1::4] = 0
+#weight[:,2::4] = 0
+#weight[:,3::4] = 0
+
 #wstd = np.std(weight)
 #threshold = wavg
 #weight[weight<threshold] = 0
@@ -40,8 +45,8 @@ for i, statefilename in enumerate(stateslist):
 # calculate a weighted/projected density of states as a function of phi
 Emax = np.max(energy)
 Emin = np.min(energy)
-Emax = +0.1*h
-Emin = -0.1*h
+Emax = +5.0*h
+Emin = -5.0*h
 nE = 2*nphi
 dE = (Emax-Emin)/(nE-1)
 E = np.array([i*dE+Emin for i in range(nE)])
@@ -53,7 +58,7 @@ for i in range(nphi):
   for j in range(nE-1):
     idx = np.where(np.logical_and(energy[:,i]>E[j],energy[:,i]<E[j+1]))[0]
     wE[i,j+1] = np.sum(weight[i,idx])
-    gE[i,j+1] = np.sum(idx)
+    gE[i,j+1] = np.sum(np.size(idx))
 
 #wE[wE!=0]=1
 # setup plot for weighted density of states
@@ -88,11 +93,12 @@ plt.figure()
 plt.tight_layout()
 #plt.grid("True")
 plt.xlim(0,phimax)
-plt.ylim(Emin, 0)
+#plt.ylim(Emin, 0)
 plt.xlabel('$\phi_{B_{eff}} = \phi_E$')
 plt.ylabel('$E(\phi_E)$')
 x = np.linspace(phimin,phimax,nphi)
-for i in range(4*nr):
-  plt.plot(x,energy[nr*(mc+0)+i,:])
+for i in range(4*nr*nm):
+  #plt.plot(x,energy[nr*(mc+0)+i,:])
+  plt.plot(x,energy[i,:])
 plt.savefig('./figures/line-full.pdf', bbox_inches='tight')
 plt.savefig('./figures/line-full.png', bbox_inches='tight')

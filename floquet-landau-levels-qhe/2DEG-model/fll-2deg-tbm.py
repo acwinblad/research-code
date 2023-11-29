@@ -18,9 +18,9 @@ pi = np.pi
 
 # System parameters
 a = 0.56E-9 # GaAs/AlGaAs: a = 0.56nm
-#a = 10e-9 # [m]
+a = 10e-9 # [m]
 m = 0.067 * m_e # GaAs/AlGaAs: m = 0.067m_e
-#m = 1.0 * m_e # [MeV/c^2]
+m = 1.0 * m_e # [MeV/c^2]
 h = hbar**2 / (2 * m * a**2) # hopping value for square lattice
 print(h)
 k = 0 # Momentum space momentum value
@@ -28,7 +28,7 @@ ka = k*a
 
 # Laser parameters
 hw = 191e-3 # [191 meV]
-Emax = 5e8 # [V/m]
+Emax = 3e7 # [V/m]
 d = 100E-9 # [m] Spatial period of the electric field of laser in x direction, make sure d>>a and not necessarily integer multiple
 K = 2*pi/d # Spatial wavenumber of laser light in x direction
 
