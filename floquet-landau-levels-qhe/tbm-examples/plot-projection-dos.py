@@ -40,7 +40,7 @@ for i, statefilename in enumerate(stateslist):
 # calculate a weighted/projected density of states as a function of phi
 Emax = np.max(energy)
 Emin = np.min(energy)
-Emax = +0.0*h
+Emax = +4.0*h
 Emin = -4.0*h
 nE = 2*nphi
 dE = (Emax-Emin)/(nE-1)
@@ -92,7 +92,7 @@ plt.ylim(Emin, 0)
 plt.xlabel('$\phi_{B_{eff}} = \phi_E$')
 plt.ylabel('$E(\phi_E)$')
 x = np.linspace(phimin,phimax,nphi)
-for i in range(2*nr):
-  plt.plot(x,energy[nr*(mc+0)+i,:])
+for i in range(nr):
+  plt.plot(x,energy[i,:])
 plt.savefig('./figures/line-full.pdf', bbox_inches='tight')
 plt.savefig('./figures/line-full.png', bbox_inches='tight')

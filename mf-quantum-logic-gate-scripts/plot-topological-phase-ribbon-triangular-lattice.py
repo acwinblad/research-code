@@ -5,11 +5,12 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 a = 1
+n = 3
 mui = -5
 muf = 3
 Af = 4*np.pi / (np.sqrt(3) *a)
 
-tp = np.loadtxt('./data/majorana-number-1pi6-n-5.txt')
+tp = np.loadtxt('./data/majorana-number-1pi6-n-%01i.txt' % (n))
 
 plt.rcParams.update({'font.size':13})
 
@@ -17,6 +18,8 @@ xmin = 0
 xmax = Af
 ymin = mui
 ymax = muf
+vmin = np.min(tp)*1.2
+vmax = np.max(tp)*1.2
 
 plt.figure()
 plt.xlim(xmin,xmax)
@@ -28,9 +31,9 @@ plt.ylabel(r"$\mu$ (t)", fontsize=16)
 plt.locator_params(axis='y', nbins=5)
 plt.gca().xaxis.set_major_formatter(mpl.ticker.StrMethodFormatter("{x:1.0f}"))
 
-plt.imshow(tp, cmap='Blues_r', extent=[xmin,xmax,ymin,ymax])
+plt.imshow(tp, cmap='inferno_r', extent=[xmin,xmax,ymin,ymax], vmin=vmin, vmax=vmax)
 plt.tight_layout()
-plt.savefig('./data/figures/topological-phase-diagram-1pi6-n-5.pdf')
+plt.savefig('./data/figures/topological-phase-diagram-1pi6-n-%01i.pdf' % (n) )
 plt.close()
 plt.clf()
 plt.cla()

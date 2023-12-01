@@ -9,11 +9,11 @@ pi = np.pi
 t = 1.0
 delta = t
 a = 1
-n = 5
+n = 1
 nA = 8*25
 nmu = nA
 Af = 4*pi / (np.sqrt(3)*a)
-mui = -5
+mui = -3
 muf = 3
 
 d1 = a
@@ -99,13 +99,15 @@ for j, avals in enumerate(Avalues):
       MN1pi6[k,l,j] = np.sign(np.real(pf.pfaffian(W1pi6[k,:,:])))
 
 #plt.figure()
-MN1 = MN0[0,:,:]*MN0[1,:,:]
-MN2 = MN1pi6[0,:,:]*MN1pi6[1,:,:]
+MN1 = (MN0[0,:,:]*MN0[1,:,:]+0.8)**3
+MN2 = (MN1pi6[0,:,:]*MN1pi6[1,:,:]+1.1)**3
 TP = MN1+MN2
-np.savetxt('./data/majorana-number-1pi6-n-5.txt', TP, fmt='%1d')
-plt.imshow(TP, cmap='Blues_r')
+vmin = np.min(TP)*1.2
+vmax = np.max(TP)*1.2
+np.savetxt('./data/majorana-number-1pi6-n-%01i.txt' % (n) , TP, fmt='%1d')
+#plt.imshow(TP, cmap='inferno_r', vmin=vmin, vmax=vmax)
+#plt.show()
 #plt.imshow(TP, cmap='Blues_r', interpolation='bicubic')
 #plt.tight_layout()
-#plt.show()
-#plt.close()
+plt.close()
 

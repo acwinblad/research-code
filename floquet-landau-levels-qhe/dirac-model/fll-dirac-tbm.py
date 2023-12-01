@@ -3,10 +3,12 @@
 import numpy as np
 import os
 import glob
+import pathlib
 
 files = glob.glob('./data/eig*')
 for f in files:
   os.remove(f)
+
 
 # Constants
 hbar = 6.582E-16 # 6.582 * 10^-16 [eV*s]
@@ -26,21 +28,24 @@ ka = k*a
 
 # Laser parameters
 hw = 191e-3 # [meV]
-Emax = 5e8 # V/m
+Emax = 2e9 # V/m
 d = 100E-9 # [m] Spatial period of the electric field of laser in x direction, make sure d>>a and not necessarily integer multiple
 K = 2*pi/d # Spatial wavenumber of laser light in x direction
 
 # Matrix cutoffs
 # Number of modes
-mc = 2
+mc = 10
 Nm = 2*mc+1
 nhw = np.arange(-mc,mc+1,1)*hw
 
 # Size of system in x direction
-rc = 3
+rc = 5
 xm = rc*a
 Nr = 2*rc+1
 xj = np.linspace(-xm, xm, Nr)
+
+filepath = './data/rc-%02i-mc-%02i/' % (rc, mc)
+pathlib.Path(filepath).mkdir(parents=True, exist_ok=True)
 
 phimin = 0
 #phimax = 1e9 # unitless
@@ -102,17 +107,13 @@ for i, phi in enumerate(phi0):
   # Quickly apply the modes along the diagonal of Q
   Q += np.kron(np.diag(nhw,k=0),np.eye(4*Nr))
 
-  if(i == nphi//2):
-    np.savetxt('./data/hnreal.txt', np.abs(np.real(H[2])), fmt='%1.2f')
-    np.savetxt('./data/hnimag.txt', np.imag(H[1]), fmt='%1.2f')
-    np.savetxt('./data/qreal.txt', np.abs(np.real(Q)), fmt='%1.1f')
-
   eng, vec = np.linalg.eigh(Q, UPLO = 'L')
   energy[:,i] = eng
   #energy[:,i] = eng[(mc+0)*4*Nr:(mc+1)*4*Nr]
-  np.savetxt('./data/eigenstate-phi-%03i.txt' % (i), vec, fmt = '%1.8f')
+  np.savetxt(filepath+'eigenstate-phi-%03i.txt' % (i), vec, fmt = '%1.8f')
 
 
-np.savetxt('./data/eng-matrix.txt', energy, fmt='%1.8f')
+np.savetxt(filepath+'eng-matrix.txt', energy, fmt='%1.8f')
 
+np.savetxt(filepath+'config.txt', [rc, mc, h, phimin, phimax, nphi])
 np.savetxt('./data/config.txt', [rc, mc, h, phimin, phimax, nphi])

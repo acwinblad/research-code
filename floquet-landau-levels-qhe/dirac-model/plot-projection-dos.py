@@ -15,6 +15,7 @@ phimax = float(config[4])
 nphi = int(config[5])
 #phi = np.array([(i/nphi)**(1/2) for i in range(nphi)])*phimax
 strnphi = str(nphi)
+filepath = './data/rc-%02i-mc-%02i/' % (rc, mc)
 
 nr = 2*rc+1
 nm = 2*mc+1
@@ -22,8 +23,8 @@ m0 = (mc-0)*4*nr
 mf = (mc+1)*4*nr
 
 # load calculated values and states
-energy = np.loadtxt('./data/eng-matrix.txt')
-stateslist = sorted( glob.glob( './data/eigenstate-phi-*.txt') )
+energy = np.loadtxt(filepath+'eng-matrix.txt')
+stateslist = sorted( glob.glob( filepath+'eigenstate-phi-*.txt') )
 
 # calculate weight/projection on 0th order Block
 weight = np.zeros( (nphi, 4*nr*nm) )
@@ -45,8 +46,8 @@ for i, statefilename in enumerate(stateslist):
 # calculate a weighted/projected density of states as a function of phi
 Emax = np.max(energy)
 Emin = np.min(energy)
-Emax = +5.0*h
-Emin = -5.0*h
+Emax = +2.0*h
+Emin = -2.0*h
 nE = 2*nphi
 dE = (Emax-Emin)/(nE-1)
 E = np.array([i*dE+Emin for i in range(nE)])
@@ -55,8 +56,10 @@ E = np.array([i*dE+Emin for i in range(nE)])
 wE = np.zeros((nphi,nE))
 gE = np.zeros((nphi,nE))
 for i in range(nphi):
+  #eidx = np.where(np.logical_and(energy[:,i]>=Emin, energy[:,i]<=Emax))[0]
   for j in range(nE-1):
-    idx = np.where(np.logical_and(energy[:,i]>E[j],energy[:,i]<E[j+1]))[0]
+    #idx = np.where(np.logical_and(energy[eidx,i]>E[j],energy[eidx,i]<E[j+1]))[0]
+    idx = np.where(np.logical_and(energy[:,i]>=E[j],energy[:,i]<E[j+1]))[0]
     wE[i,j+1] = np.sum(weight[i,idx])
     gE[i,j+1] = np.sum(np.size(idx))
 
@@ -93,12 +96,12 @@ plt.figure()
 plt.tight_layout()
 #plt.grid("True")
 plt.xlim(0,phimax)
-#plt.ylim(Emin, 0)
+plt.ylim(Emin, Emax)
 plt.xlabel('$\phi_{B_{eff}} = \phi_E$')
 plt.ylabel('$E(\phi_E)$')
 x = np.linspace(phimin,phimax,nphi)
 for i in range(4*nr*nm):
   #plt.plot(x,energy[nr*(mc+0)+i,:])
-  plt.plot(x,energy[i,:])
+  plt.plot(x,energy[i,:], 'k.')
 plt.savefig('./figures/line-full.pdf', bbox_inches='tight')
 plt.savefig('./figures/line-full.png', bbox_inches='tight')
