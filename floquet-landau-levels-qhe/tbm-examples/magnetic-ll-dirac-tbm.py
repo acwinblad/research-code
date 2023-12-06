@@ -25,7 +25,7 @@ k = 0.0*pi/(3*a) # [m^-1] Momentum space wavenumber Probably shouldn't be zero f
 ka = k*a
 
 # Magnetic parameters
-Bmax = 145000 # T
+Bmax = 13500 # T
 
 # Size of system in x direction
 rc = 6
@@ -39,7 +39,7 @@ phimax = Bmax*a**2/hbar # unitless
 nphi = 100
 phi0 = np.linspace(phimin,phimax,nphi)
 #Ka = np.linspace(-k*a,k*a,nphi)
-phi0 = np.array([ (phimin + i/nphi)**(3/1) for i in range(nphi) ] ) * phimax
+phi0 = np.array([ (phimin + i/nphi)**(1/1) for i in range(nphi) ] ) * phimax
 energy = np.zeros( (4*Nr, nphi) )
 #energy = np.zeros( (4*Nr, nphi) )
 H = np.zeros( (4*Nr,4*Nr) , dtype='complex')

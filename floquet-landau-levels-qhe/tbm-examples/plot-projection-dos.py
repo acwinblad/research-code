@@ -58,7 +58,9 @@ for i in range(nphi):
 #wE[wE!=0]=1
 # setup plot for weighted density of states
 fig, ax = plt.subplots(1,1)
-
+phi = np.linspace(phimin,phimax,nphi)
+eng = np.linspace(Emin,Emax,nE)
+X, Y = np.meshgrid(phi,eng)
 # set x-axis
 xticks = np.linspace(-1,1,5, endpoint=True)
 xlabelarray = np.linspace( phimin, phimax, 5, endpoint=True)
@@ -74,12 +76,12 @@ ax.set_yticklabels(['%1.2f' % val for val in ylabelarray])
 ax.set_ylabel('$E(\phi_E)$')
 
 # plot and save figures
-img = ax.imshow( ( np.flipud(wE[1:].transpose()) )**(0.5), interpolation='nearest', cmap='Blues', extent=[-1,1,-1,1])
+img = ax.imshow( ( np.flipud(wE[1:].transpose()) )**(0.5), interpolation='nearest', cmap='Blues', extent=[X.min(), X.max(), Y.min(), Y.max()], aspect='auto')
 plt.savefig('./figures/dos-projection.pdf', bbox_inches='tight')
 plt.savefig('./figures/dos-projection.png', bbox_inches='tight')
 
 # normal dos
-img = ax.imshow( (np.flipud(gE[1:].transpose()) )**(1.0), interpolation='spline16', cmap='Blues', extent=[-1,1,-1,1])
+img = ax.imshow( ( np.flipud(gE[1:].transpose()) )**(1.0), interpolation='nearest', cmap='Blues', extent=[X.min(), X.max(), Y.min(), Y.max()], aspect='auto')
 plt.savefig('./figures/dos-full.pdf', bbox_inches='tight')
 
 

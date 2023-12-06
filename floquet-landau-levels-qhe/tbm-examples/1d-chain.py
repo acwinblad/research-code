@@ -13,6 +13,8 @@ k = np.arange(1,n+1)*2*np.pi/(L)
 print(k)
 
 H = mu * np.diag(np.ones(n),k=0) - h * np.diag(np.ones(n-1),k=-1)
+# Adding periodic conditions makes k = 2*pi*n/L
+H[-1,0] = -h
 
 evals, evecs = np.linalg.eigh(H, UPLO = 'L')
 print(evals)

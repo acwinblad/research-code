@@ -5,10 +5,6 @@ import os
 import glob
 import pathlib
 
-files = glob.glob('./data/eig*')
-for f in files:
-  os.remove(f)
-
 
 # Constants
 hbar = 6.582E-16 # 6.582 * 10^-16 [eV*s]
@@ -28,13 +24,13 @@ ka = k*a
 
 # Laser parameters
 hw = 191e-3 # [meV]
-Emax = 2e9 # V/m
+Emax = 1.5e9 # V/m
 d = 100E-9 # [m] Spatial period of the electric field of laser in x direction, make sure d>>a and not necessarily integer multiple
 K = 2*pi/d # Spatial wavenumber of laser light in x direction
 
 # Matrix cutoffs
 # Number of modes
-mc = 10
+mc = 4
 Nm = 2*mc+1
 nhw = np.arange(-mc,mc+1,1)*hw
 
@@ -44,8 +40,19 @@ xm = rc*a
 Nr = 2*rc+1
 xj = np.linspace(-xm, xm, Nr)
 
+
+m0 = mc*4*Nr
+mf = (mc+1)*4*Nr
+parr = np.append(np.append(np.zeros(mc),1),np.zeros(mc))
+#proj = np.kron(np.diag(parr,k=0),np.ones((4*Nr,4*Nr)))
+proj = np.kron(np.diag(parr,k=0),np.eye(4*Nr))
+
 filepath = './data/rc-%02i-mc-%02i/' % (rc, mc)
 pathlib.Path(filepath).mkdir(parents=True, exist_ok=True)
+files = glob.glob(filepath + 'eig*')
+for f in files:
+  os.remove(f)
+
 
 phimin = 0
 #phimax = 1e9 # unitless
@@ -109,8 +116,9 @@ for i, phi in enumerate(phi0):
 
   eng, vec = np.linalg.eigh(Q, UPLO = 'L')
   energy[:,i] = eng
+  vecm0 = np.real(np.matmul(vec.conj().T,proj))
   #energy[:,i] = eng[(mc+0)*4*Nr:(mc+1)*4*Nr]
-  np.savetxt(filepath+'eigenstate-phi-%03i.txt' % (i), vec, fmt = '%1.8f')
+  np.savetxt(filepath+'eigenstate-phi-%03i.txt' % (i), vec[m0:mf,:], fmt = '%1.8f')
 
 
 np.savetxt(filepath+'eng-matrix.txt', energy, fmt='%1.8f')
