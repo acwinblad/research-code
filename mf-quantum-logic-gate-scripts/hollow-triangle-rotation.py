@@ -12,8 +12,8 @@ import os
 
 plotLattice = False
 plotVectorField = False
-plotWavefunction = True
-plotSpectral = False
+plotWavefunction = False
+plotSpectral = True
 
 # Define parameters
 t = 1
@@ -24,8 +24,8 @@ nr = 50
 
 vecPotFunc = 'step-function'
 #vecPotFunc = 'linear'
-#vecPotFunc = 'constant'
-vecPotFunc = 'tanh'
+vecPotFunc = 'constant'
+#vecPotFunc = 'tanh'
 
 if(vecPotFunc=='step-function'):
   A0 = 2 * np.pi / (3*np.sqrt(3) * a)
@@ -63,7 +63,7 @@ nnlist, nnphaseFtr, nnphiParams = htm.nearest_neighbor_list(a, coords)
 # Loop through the varying angles of t for the vector potential
 nE = 1*4 # must be even?
 nt = 1*50
-tf = 1*np.pi/3
+tf = 3*np.pi/3
 tvals = np.linspace(0,tf,nt+1)
 evt = np.zeros((2*nE,nt+1))
 evtt = np.zeros((nt+1))

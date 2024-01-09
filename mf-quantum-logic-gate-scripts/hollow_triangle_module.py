@@ -410,6 +410,7 @@ def plot_hollow_triangle_rotation_spectral_flow(_mu, _nr, _A0, _width, _nE, _ava
   xmin = _avals[0]
 
   plt.figure()
+  fig, ax = plt.subplots(1,1)
   plt.xlim(xmin/xmax,xmax/xmax)
   #plt.xlim(xmin,xmax)
   plt.ylim(ymin, ymax)
@@ -427,12 +428,33 @@ def plot_hollow_triangle_rotation_spectral_flow(_mu, _nr, _A0, _width, _nE, _ava
 
   plt.axvline(x=1/3, color='k', linestyle = "--")
   plt.axvline(x=2/3, color='k', linestyle = "--")
-  #plt.plot(0.0,0,"s",c='C1', markersize=10, clip_on=False, zorder=100)
-  #plt.plot(1/6,0,"o",c='C1', markersize=10)
-  #plt.plot(1/3,0,"D",c='C1', markersize=10)
+  plt.plot(0.0,0,"s",c='C1', markersize=10, clip_on=False, zorder=100)
+  plt.plot(1/12,0,"^",c='C1', markersize=10)
+  plt.plot(1/6,0,"o",c='C1', markersize=10)
+  plt.plot(1/3,0,"D",c='C1', markersize=10)
   #plt.plot(2/3,0,"^",c='C1', markersize=10)
 
-  plt.tight_layout()
+  inssize = 1/2
+  axins = ax.inset_axes([1/4,0.70,inssize,0.5*inssize])
+  axins.set_xticks([])
+  axins.set_yticks([])
+  axins.set_aspect('equal')
+  axins.plot(_avals/xmax, 15*_eva[_nE,:], 'C0')
+  axins.plot(_avals/xmax, 15*_eva[_nE-1,:], 'C0')
+  axins.plot(0.0,0,"s",c='C1', markersize=10, clip_on=False, zorder=100)
+  axins.plot(1/12,0,"^",c='C1', markersize=10)
+  axins.plot(1/6,0,"o",c='C1', markersize=10)
+  axins.plot(1/3,0,"D",c='C1', markersize=10, clip_on=False, zorder=100)
+  axins.set_xlim(xmin/xmax,xmax/xmax/3)
+  axins.set_ylim(ymin/10,ymax/10)
+  ax.indicate_inset_zoom(axins, edgecolor='red')
+
+  axins.set_xticklabels([])
+  axins.set_yticklabels([])
+
+
+  #plt.tight_layout()
+  fig.tight_layout()
   plt.savefig(_filepath+'spectral-flow.pdf')
   plt.close()
   plt.clf()

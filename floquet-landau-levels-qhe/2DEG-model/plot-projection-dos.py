@@ -4,8 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import glob
+from scipy.stats import gaussian_kde
 
 # load configuration values
+mc = 5
+rc = 5
+filepath = './data/'
+#config = np.loadtxt(filepath+'config.txt')
 config = np.loadtxt('./data/config.txt')
 rc = int(config[0])
 mc = int(config[1])
@@ -22,77 +27,98 @@ m0 = (mc-0)*nr
 mf = (mc+1)*nr
 
 # load calculated values and states
-energy = np.loadtxt('./data/eng-matrix.txt')
-stateslist = sorted( glob.glob( './data/eigenstate-phi-*.txt') )
+energy = np.loadtxt(filepath+'eng-matrix.txt')
+stateslist = sorted( glob.glob( filepath+'eigenstate-phi-*.txt') )
 
 # calculate weight/projection on 0th order Block
 weight = np.zeros( (nphi, nr*nm) )
 for i, statefilename in enumerate(stateslist):
-  states = np.loadtxt( statefilename, dtype=complex, skiprows=m0, max_rows=nr )
-  weight[i,:] = np.diag( np.real( np.matmul( states.conj().T, states ) ) , k=0 )
+  #states = np.loadtxt( statefilename, dtype=complex, skiprows=m0, max_rows=nr )
+  states = np.loadtxt( statefilename, dtype = complex)
+  tmp = np.real(np.matmul( states.conj().T, states ))
+  #print(tmp)
+  weight[i,:] = np.diag( tmp, k=0 )
+  #weight[i,:] = np.diag( states, k=0 )
 
 #wavg = np.average(weight)
+#weight = weight[0::4,:]
+#weight[:,1::4] = 0
+#weight[:,2::4] = 0
+#weight[:,3::4] = 0
+
 #wstd = np.std(weight)
 #threshold = wavg
 #weight[weight<threshold] = 0
 #weight[weight>=threshold] = 1
 
 # calculate a weighted/projected density of states as a function of phi
-Emax = np.max(energy)
-Emin = np.min(energy)
 Emax = +0.0*h
 Emin = -4.0*h
-nE = 2*nphi
-dE = (Emax-Emin)/(nE-1)
-E = np.array([i*dE+Emin for i in range(nE)])
+nE = 400
+dE = (Emax - Emin)/(nE-1)
+#E = np.array([i*dE+Emin for i in range(nE)])
+E = np.arange(0,nE)*dE+Emin
 
 # place weighted eigenvalues in an energy box-bin (also a normal dos)
-wE = np.zeros((nphi,nE))
-gE = np.zeros((nphi,nE))
+wE = np.zeros((nE,nphi))
+gE = np.zeros((nE,nphi))
+gausgE = np.zeros((nE,nphi))
+gauswE = np.zeros((nE,nphi))
+sigma = dE
+sig2 = sigma**2
+norm = (sigma*np.sqrt(np.pi))**(-1)
+
 for i in range(nphi):
+  #eidx = np.where(np.logical_and(energy[:,i]>=Emin, energy[:,i]<=Emax))[0]
+  gausgE[i,0] = norm*np.sum(np.exp( -(E[0] - energy[:,i])**2 / sig2))
+  gauswE[i,0] = norm*np.sum(weight[i,:]*np.exp( -(E[0] - energy[:,i])**2 / sig2))
   for j in range(nE-1):
-    idx = np.where(np.logical_and(energy[:,i]>E[j],energy[:,i]<E[j+1]))[0]
-    wE[i,j+1] = np.sum(weight[i,idx])
-    gE[i,j+1] = np.sum(np.size(idx))
+    #idx = np.where(np.logical_and(energy[eidx,i]>E[j],energy[eidx,i]<E[j+1]))[0]
+    idx = np.where(np.logical_and(energy[:,i]>=E[j],energy[:,i]<E[j+1]))[0]
+    wE[j+1, i] = np.sum(weight[i,idx])
+    gE[j+1, i] = np.size(idx)
+    gausgE[j+1, i] = norm*np.sum(np.exp( -(E[j+1] - energy[:,i])**2 / sig2))
+    gauswE[j+1, i] = norm*np.sum(weight[i,:]*np.exp( -(E[j+1] - energy[:,i])**2 / sig2))
 
 #wE[wE!=0]=1
 # setup plot for weighted density of states
 fig, ax = plt.subplots(1,1)
+x = np.linspace(phimin,phimax,nphi//2)
+phi = np.linspace(phimin,phimax,nphi)
+Eng = np.linspace(Emin,Emax,nE)
+y = 0.9*x**1.5 +0.191*2
+X, Y = np.meshgrid(phi,Eng)
 
 # set x-axis
-xticks = np.linspace(-1,1,5, endpoint=True)
+xticks = np.linspace(phimin,phimax,5, endpoint=True)
 xlabelarray = np.linspace( phimin, phimax, 5, endpoint=True)
 ax.set_xticks(xticks)
-ax.set_xticklabels(['%1.2e' % val for val in xlabelarray])
-ax.set_xlabel('$\phi_E$')
+ax.set_xticklabels(['%1.2f' % val for val in xlabelarray])
+ax.set_xlabel('$\phi_0$')
 
 # set y-axis
-yticks = np.linspace(-1,1,5, endpoint=True)
+yticks = np.linspace(Emin,Emax,5, endpoint=True)
 ylabelarray = np.linspace(Emin, Emax, 5, endpoint=True)
 ax.set_yticks(yticks)
-ax.set_yticklabels(['%1.2f' % val for val in ylabelarray])
-ax.set_ylabel('$E(\phi_E)$')
+ax.set_yticklabels(['%1.2e' % val for val in ylabelarray])
+ax.set_ylabel('$Energy\ (eV)$')
 
 # plot and save figures
-img = ax.imshow( ( np.flipud(wE[1:].transpose()) )**(0.5), interpolation='nearest', cmap='Blues', extent=[-1,1,-1,1])
-plt.savefig('./figures/dos-projection.pdf', bbox_inches='tight')
-plt.savefig('./figures/dos-projection.png', bbox_inches='tight')
-
 # normal dos
-img = ax.imshow( (np.flipud(gE[1:].transpose()) )**(1.0), interpolation='spline16', cmap='Blues', extent=[-1,1,-1,1])
+img = ax.imshow( gE[1:]**(1.0), interpolation='spline16', cmap='inferno_r', extent=[X.min(), X.max(), Y.min(), Y.max()], aspect='auto')
 plt.savefig('./figures/dos-full.pdf', bbox_inches='tight')
 
+# proj dos
+img = ax.imshow( wE[1:]**(1.0), interpolation='nearest', cmap='inferno_r', extent=[X.min(), X.max(), Y.min(), Y.max()], aspect='auto')
+#ax.plot(x,y, 'k.')
+#plt.plot(x,y, 'k--')
+plt.savefig('./figures/dos-projection.pdf', bbox_inches='tight')
 
-# This section only works when hbar*w >> h (hopping) to have well separated bands
-plt.figure()
-plt.tight_layout()
-#plt.grid("True")
-plt.xlim(0,phimax)
-plt.ylim(Emin, 0)
-plt.xlabel('$\phi_{B_{eff}} = \phi_E$')
-plt.ylabel('$E(\phi_E)$')
-x = np.linspace(phimin,phimax,nphi)
-for i in range(2*nr):
-  plt.plot(x,energy[nr*(mc+0)+i,:])
-plt.savefig('./figures/line-full.pdf', bbox_inches='tight')
-plt.savefig('./figures/line-full.png', bbox_inches='tight')
+# gaussian dos
+img = ax.imshow( gausgE**(1.0), interpolation='spline16', cmap='inferno_r', extent=[X.min(), X.max(), Y.min(), Y.max()], aspect='auto')
+plt.savefig('./figures/dos-gauss.pdf', bbox_inches='tight')
+
+# projected gaussian dos
+img = ax.imshow( gauswE**(1.0), interpolation='spline16', cmap='inferno_r', extent=[X.min(), X.max(), Y.min(), Y.max()], aspect='auto')
+plt.savefig('./figures/dos-gauss-projection.pdf', bbox_inches='tight')
+

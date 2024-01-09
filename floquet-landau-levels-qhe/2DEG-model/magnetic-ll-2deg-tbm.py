@@ -18,16 +18,20 @@ pi = np.pi
 
 # System parameters
 a = 0.56E-9 # GaAs/AlGaAs: a = 0.56nm
-a = 10e-9 # [m]
+#a = 1e-9 # [m]
 m = 0.067 * m_e # GaAs/AlGaAs: m = 0.067m_e
-m = 1.0 * m_e # [MeV/c^2]
+#m = 1.0 * m_e # [MeV/c^2]
 h = hbar**2 / (2 * m * a**2) # hopping value for square lattice
 print(h)
 k = 0 # Momentum space momentum value
 ka = k*a
 
 # Laser parameters
-Bmax = 25 # [T=Vs/m^2]
+hw = 191E-3 # [191 meV]
+Emax = 2E8 # [V/m]
+d = 100E-9 # Spatial period of the electric field of oblique laser in x direction, make sure d>>a and not necessarily integer multiple
+K = 2*pi/d # Spatial wavenumber of obilque light in x-direction
+Bfct = K**2*hbar**3 / (m * a**2 * hw) # [T=Vs/m^2]
 
 # Matrix cutoffs
 # Size of system in x direction
@@ -39,7 +43,7 @@ xj = np.linspace(-xm, xm, Nr)
 # Range of Electric field strength and
 phimin = 0
 phimax = 1e8 # unitless
-phimax = Bmax*a**2/hbar # unitless
+phimax = Emax*a/hw # unitless
 nphi = 100
 phi0 = np.linspace(phimin,phimax,nphi)
 
@@ -51,7 +55,7 @@ Adotdl = (xj+a/2) / (2*a)
 # For loop over the phi0 terms
 for i, phi in enumerate(phi0):
 
-  H = -2*h*np.diag(np.cos(ka-phi*Adotdl), k=0) - h*np.diag(np.exp(-1.0j*phi*Adotdl[:-1]),k=-1)
+  H = -2*h*np.diag(np.cos(ka-Bfct*phi**2*Adotdl), k=0) - h*np.diag(np.exp(-1.0j*Bfct*phi**2*Adotdl[:-1]),k=-1)
 
 
   #eng = np.linalg.eigvalsh(Q, UPLO = 'L')
