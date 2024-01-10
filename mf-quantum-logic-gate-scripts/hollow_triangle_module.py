@@ -12,6 +12,8 @@ import matplotlib.tri as mtri
 from matplotlib import cbook
 from mpl_toolkits.axes_grid.inset_locator import (inset_axes, InsetPosition, mark_inset)
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import pathlib
 
 yp= np.sqrt(3)/2
@@ -404,7 +406,7 @@ def plot_hollow_triangle_spectral_flow(_mu, _nr, _A0, _width, _nE, _avals, _eva,
 def plot_hollow_triangle_rotation_spectral_flow(_mu, _nr, _A0, _width, _nE, _avals, _eva, _filepath):
   plt.rcParams.update({'font.size': 16})
   #ymax = 1.01*np.max(_evb[:,:])
-  ymax = 0.4
+  ymax = 0.5
   ymin = -ymax
   xmax = _avals[-1]
   xmin = _avals[0]
@@ -424,33 +426,34 @@ def plot_hollow_triangle_rotation_spectral_flow(_mu, _nr, _A0, _width, _nE, _ava
 
   for i in range(2*_nE):
     #plt.plot(_avals,_eva[i,:], 'C0')
-    plt.plot(_avals/xmax,_eva[i,:], 'C0')
+    ax.plot(_avals/xmax,_eva[i,:], 'C0')
 
-  plt.axvline(x=1/3, color='k', linestyle = "--")
-  plt.axvline(x=2/3, color='k', linestyle = "--")
-  plt.plot(0.0,0,"s",c='C1', markersize=10, clip_on=False, zorder=100)
-  plt.plot(1/12,0,"^",c='C1', markersize=10)
-  plt.plot(1/6,0,"o",c='C1', markersize=10)
-  plt.plot(1/3,0,"D",c='C1', markersize=10)
+  ax.axvline(x=1/3, color='k', linestyle = "--")
+  ax.axvline(x=2/3, color='k', linestyle = "--")
+  ax.plot(0.0,0,"s",c='C1', markersize=10, clip_on=False, zorder=100)
+  ax.plot(1/12,0,"^",c='C1', markersize=10)
+  ax.plot(1/6,0,"o",c='C1', markersize=10)
+  ax.plot(1/3,0,"D",c='C1', markersize=10)
   #plt.plot(2/3,0,"^",c='C1', markersize=10)
 
-  inssize = 1/2
-  axins = ax.inset_axes([1/4,0.70,inssize,0.5*inssize])
-  axins.set_xticks([])
-  axins.set_yticks([])
+  axins = ax.inset_axes([1/6+0.01,0.73,0.33,0.20], xlim=(0,0.33), xticks=[0,0.33])
+  insyf = 100
   axins.set_aspect('equal')
-  axins.plot(_avals/xmax, 15*_eva[_nE,:], 'C0')
-  axins.plot(_avals/xmax, 15*_eva[_nE-1,:], 'C0')
-  axins.plot(0.0,0,"s",c='C1', markersize=10, clip_on=False, zorder=100)
-  axins.plot(1/12,0,"^",c='C1', markersize=10)
-  axins.plot(1/6,0,"o",c='C1', markersize=10)
-  axins.plot(1/3,0,"D",c='C1', markersize=10, clip_on=False, zorder=100)
+  axins.plot(_avals/xmax, _eva[_nE,:], 'C0')
+  axins.plot(_avals/xmax, _eva[_nE-1,:], 'C0')
+  #axins.plot(0.0,0,"s",c='C1', markersize=10, clip_on=False, zorder=100)
+  #axins.plot(1/12,0,"^",c='C1', markersize=10)
+  #axins.plot(1/6,0,"o",c='C1', markersize=10)
+  #axins.plot(1/3,0,"D",c='C1', markersize=10, clip_on=False, zorder=100)
   axins.set_xlim(xmin/xmax,xmax/xmax/3)
-  axins.set_ylim(ymin/10,ymax/10)
-  ax.indicate_inset_zoom(axins, edgecolor='red')
+  axins.set_ylim(ymin/insyf,ymax/insyf)
+  #ax.indicate_inset_zoom(axins, edgecolor='red')
 
-  axins.set_xticklabels([])
-  axins.set_yticklabels([])
+  #axins.set_xticklabels([])
+  #axins.set_xticks([0,0.33])
+  axins.set_yticks([ymin/insyf,ymax/insyf])
+  axins.set_yticklabels([ymin/insyf,ymax/insyf])
+  axins.set_aspect('auto')
 
 
   #plt.tight_layout()

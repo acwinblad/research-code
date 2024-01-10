@@ -24,7 +24,7 @@ nr = 50
 
 vecPotFunc = 'step-function'
 #vecPotFunc = 'linear'
-vecPotFunc = 'constant'
+#vecPotFunc = 'constant'
 #vecPotFunc = 'tanh'
 
 if(vecPotFunc=='step-function'):
@@ -62,7 +62,7 @@ nnlist, nnphaseFtr, nnphiParams = htm.nearest_neighbor_list(a, coords)
 
 # Loop through the varying angles of t for the vector potential
 nE = 1*4 # must be even?
-nt = 1*50
+nt = 5*50
 tf = 3*np.pi/3
 tvals = np.linspace(0,tf,nt+1)
 evt = np.zeros((2*nE,nt+1))
