@@ -48,6 +48,7 @@ xm = rc*a
 Nr = 2*rc+1
 xj = np.linspace(-xm, xm, Nr)
 Kxj = K*xj
+Kxavg = 0.5 * ( Kxj[1:] + Kxj[:-1] )
 
 m0 = (mc+0)*Nr
 mf = (mc+1)*Nr
@@ -57,7 +58,7 @@ Efmin = 0.0E0 # [V/m]
 Efmin = 2.25 * hw / a # [V/m]
 Efmin = 0. * hw / a # [V/m]
 Efmax = 1.0E9 # [V/m]
-Efmax = 4.0 * hw / a # [V/m]
+Efmax = 100.0 * hw / a # [V/m]
 nEf = 100
 Efrange = np.linspace(Efmin,Efmax,nEf)
 
@@ -72,7 +73,7 @@ for i, Ef in enumerate(Efrange):
   # Clear the Q matrix since we will be adding to the matrix
   Q = np.zeros( (Nm*Nr,Nm*Nr) )
   for n in range(Nm):
-    H[n] = -2*t*np.diag(sp.jv(n,(Ef*a/hw)*np.sin(Kxj)),k=0)*np.cos(ka-n*pi/2) - t * (-1)**n * np.diag(sp.jv(n,(Ef*a/hw)*np.ones(Nr-1)),k=1) - t * np.diag(sp.jv(n,(Ef*a/hw)*np.ones(Nr-1)), k=-1)
+    H[n] = -2*t*np.diag(sp.jv(n,(Ef*a/hw)*np.sin(Kxj)),k=0)*np.cos(ka-n*pi/2) - t * (-1)**n * np.diag(sp.jv(n,(Ef*a/hw)*np.sin(Kxavg)),k=1) - t * np.diag(sp.jv(n,(Ef*a/hw)*np.sin(Kxavg)), k=-1)
     # Quick way to fill the Q matrix is to use kronecker functions for the block diagonals (and subdiagonals H_1, H_2, ...)
     Q += np.kron(np.diag(np.ones(Nm-n),k=n),H[n])
 

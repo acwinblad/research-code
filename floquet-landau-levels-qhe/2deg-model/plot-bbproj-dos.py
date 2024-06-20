@@ -36,7 +36,7 @@ for i, weightsfilename in enumerate(weightslist):
   weight[i,:] = np.loadtxt( weightsfilename )
 
 # calculate a weighted/projected density of states as a function of Ef
-Emax = +4.*h
+Emax = +2.*h
 Emin = -4.*h
 nE = 400
 dE = (Emax - Emin)/(nE-1)
