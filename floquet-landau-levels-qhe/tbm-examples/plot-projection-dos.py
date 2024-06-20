@@ -42,7 +42,7 @@ Emax = np.max(energy)
 Emin = np.min(energy)
 Emax = +4.0*h
 Emin = -4.0*h
-nE = 2*nphi
+nE = 1*nphi//2
 dE = (Emax-Emin)/(nE-1)
 E = np.array([i*dE+Emin for i in range(nE)])
 
@@ -62,39 +62,24 @@ phi = np.linspace(phimin,phimax,nphi)
 eng = np.linspace(Emin,Emax,nE)
 X, Y = np.meshgrid(phi,eng)
 # set x-axis
-xticks = np.linspace(-1,1,5, endpoint=True)
-xlabelarray = np.linspace( phimin, phimax, 5, endpoint=True)
-ax.set_xticks(xticks)
-ax.set_xticklabels(['%1.2e' % val for val in xlabelarray])
+#xticks = np.linspace(-1,1,5, endpoint=True)
+#xlabelarray = np.linspace( phimin, phimax, 5, endpoint=True)
+#ax.set_xticks(xticks)
+#ax.set_xticklabels(['%1.2e' % val for val in xlabelarray])
 ax.set_xlabel('$\phi_E$')
 
 # set y-axis
-yticks = np.linspace(-1,1,5, endpoint=True)
-ylabelarray = np.linspace(Emin, Emax, 5, endpoint=True)
-ax.set_yticks(yticks)
-ax.set_yticklabels(['%1.2f' % val for val in ylabelarray])
+#yticks = np.linspace(-1,1,5, endpoint=True)
+#ylabelarray = np.linspace(Emin, Emax, 5, endpoint=True)
+#ax.set_yticks(yticks)
+#ax.set_yticklabels(['%1.2f' % val for val in ylabelarray])
 ax.set_ylabel('$E(\phi_E)$')
 
 # plot and save figures
 img = ax.imshow( ( np.flipud(wE[1:].transpose()) )**(0.5), interpolation='nearest', cmap='Blues', extent=[X.min(), X.max(), Y.min(), Y.max()], aspect='auto')
 plt.savefig('./figures/dos-projection.pdf', bbox_inches='tight')
-plt.savefig('./figures/dos-projection.png', bbox_inches='tight')
+#plt.savefig('./figures/dos-projection.png', bbox_inches='tight')
 
 # normal dos
 img = ax.imshow( ( np.flipud(gE[1:].transpose()) )**(1.0), interpolation='nearest', cmap='Blues', extent=[X.min(), X.max(), Y.min(), Y.max()], aspect='auto')
 plt.savefig('./figures/dos-full.pdf', bbox_inches='tight')
-
-
-# This section only works when hbar*w >> h (hopping) to have well separated bands
-plt.figure()
-plt.tight_layout()
-#plt.grid("True")
-plt.xlim(0,phimax)
-plt.ylim(Emin, 0)
-plt.xlabel('$\phi_{B_{eff}} = \phi_E$')
-plt.ylabel('$E(\phi_E)$')
-x = np.linspace(phimin,phimax,nphi)
-for i in range(nr):
-  plt.plot(x,energy[i,:])
-plt.savefig('./figures/line-full.pdf', bbox_inches='tight')
-plt.savefig('./figures/line-full.png', bbox_inches='tight')

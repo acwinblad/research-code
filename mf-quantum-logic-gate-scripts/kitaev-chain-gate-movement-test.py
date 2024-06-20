@@ -66,6 +66,7 @@ for j in range(ng):
   plt.plot(x,engarr[n-2,ji:jf])
   plt.plot(x,engarr[n-3,ji:jf])
   plt.plot(x,engarr[n-4,ji:jf])
+plt.ylim(-0.001,0.001)
 plt.show()
 plt.savefig('./kitaev-chain-gate-movement-band-gap.pdf')
 plt.close()

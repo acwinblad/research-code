@@ -18,33 +18,31 @@ plotSpectral = True
 # Define parameters
 t = 1
 delta = t
-mu = 1.6*t
+mu = 1.60*t
 a = 1
-nr = 50
+nr = 80
 
 vecPotFunc = 'step-function'
 #vecPotFunc = 'linear'
-#vecPotFunc = 'constant'
+vecPotFunc = 'constant'
 #vecPotFunc = 'tanh'
 
-if(vecPotFunc=='step-function'):
-  A0 = 2 * np.pi / (3*np.sqrt(3) * a)
-  A0 = 2.75 / a
-elif(vecPotFunc=='tanh'):
-  A0 = 2 * np.pi / (3 * np.sqrt(3) * a)
-  A0 = 2.75 / a
-elif(vecPotFunc=='linear'):
-  A0 = 8 * np.pi / (3 * np.sqrt(3) * a**2 * (2 * nr - 3) )
-elif(vecPotFunc=='constant'):
-  A0 = 4 * np.pi / (np.sqrt(3) * a) / 2
-  A0 = 2.75
-else:
+if(vecPotFunc == ''):
   print('pick a vector potential type from the following: step-function, tanh, linear, or constant')
+
+A0 = 0.75
+Amin = 1.10
+Amax = 1.250
+Amin = 0.77
+Amax = 0.830
+#Amin = 2.35
+#Amax = 2.35
+
 
 
 # The inner boundary is dependant on the width we want and bounded by the outer boundary.
 # Define the width first then we can determine the the number of rows of the inner boundary.
-width = 1
+width = 3
 width *= a
 # Build the hollow triangle lattice
 hollowtri, innertri = htm.build_hollow_triangle(a, nr, width)
@@ -62,9 +60,28 @@ nnlist, nnphaseFtr, nnphiParams = htm.nearest_neighbor_list(a, coords)
 
 # Loop through the varying angles of t for the vector potential
 nE = 1*4 # must be even?
-nt = 5*50
-tf = 3*np.pi/3
-tvals = np.linspace(0,tf,nt+1)
+
+if(plotSpectral):
+  nt = 4*60
+  tf = 3*np.pi/3
+  tvals = np.linspace(0,tf,nt+1)
+  Avals = np.linspace(Amax,Amin,nt//6, endpoint=False)
+  Avals = np.append(Avals, np.linspace(Amin,Amax,nt//6))
+  Avals = np.append(Avals,Avals)
+  Avals = np.append(Avals,Avals)
+  Avals = np.append(Avals,Amax)
+
+if(plotWavefunction):
+  nt = 1*6
+  tf = 3*np.pi/3
+  tvals = np.linspace(0,tf,nt+1)
+  Avals = np.linspace(Amax,Amin,nt//2, endpoint=False)
+  #Avals = np.append(Avals, np.linspace(Amin,Amax,nt//2+1))
+  Avals = np.append(Avals, np.linspace(Amin,Amax,nt//6))
+  Avals = np.append(Avals,Avals)
+  Avals = np.append(Avals,Avals)
+  Avals = np.append(Avals,Amax)
+
 evt = np.zeros((2*nE,nt+1))
 evtt = np.zeros((nt+1))
 wf = np.zeros((n, nt+1))
@@ -84,7 +101,7 @@ for k, angle in enumerate(tvals):
   for j in range(len(nnlist)):
     for nnl, l in enumerate(nnlist[j]):
       phiftr = htm.calc_phi(a, coords[j,0], coords[l,0], coords[j,1], coords[l,1], nnphiParams[j][nnl][0], nnphiParams[j][nnl][1], angle, vecPotFunc)
-      bdg[j, l] = -t * np.exp(1.0j * phiftr * A0)
+      bdg[j, l] = -t * np.exp(1.0j * phiftr * Avals[k])
       bdg[n+j, n+l] = -np.conjugate(bdg[j, l])
 
   # Solve the eigenvalue problem for energies only
@@ -93,7 +110,7 @@ for k, angle in enumerate(tvals):
   evtt[k] = eng[n]
   vec = np.real(np.multiply(vec, np.conj(vec)))
   vvt = vec[:,n-nE:n+nE]
-  wf[:,k] = vec[0:n,n] + vec[n:2*n,n] + vec[0:n,n+1] + vec[n:2*n,n+1]
+  wf[:,k] = vec[0:n,n] + vec[n:2*n,n] + vec[0:n,n-1] + vec[n:2*n,n-1]
 
   ## Save data
   #np.savetxt('./data/hollow-triangle-energy.txt', eng, fmt='%1.8e')

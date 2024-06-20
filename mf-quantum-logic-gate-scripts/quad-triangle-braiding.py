@@ -13,7 +13,7 @@ import os
 plotWavefunction = False
 plotSpectral = False
 plotWavefunction = True
-#plotSpectral = True
+plotSpectral = True
 
 # Define parameters
 t = 1

@@ -25,16 +25,16 @@ k = 0.0*pi/(3*a) # [m^-1] Momentum space wavenumber Probably shouldn't be zero f
 ka = k*a
 
 # Magnetic parameters
-Bmax = 13500 # T
+Bmax = pi*hbar/a**2 # T
 
 # Size of system in x direction
-rc = 6
+rc = 15
 xm = rc*a
 Nr = 2*rc+1
 xj = np.linspace(-xm, xm, Nr)
 
 phimin = 0
-phimax = Bmax*a**2/hbar # unitless
+phimax = Bmax*a**2/hbar/10 # unitless
 
 nphi = 100
 phi0 = np.linspace(phimin,phimax,nphi)
@@ -83,6 +83,7 @@ for i, phi in enumerate(phi0):
   eng, vec = np.linalg.eigh(H, UPLO = 'L')
   energy[:,i] = eng
   #energy[:,i] = eng[(mc+0)*4*Nr:(mc+1)*4*Nr]
+  vec = np.real(np.multiply(vec, vec.conj()))
   np.savetxt('./data/eigenstate-phi-%03i.txt' % (i), vec, fmt = '%1.8f')
 
 

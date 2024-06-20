@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 plotLattice = False
 plotVectorField = False
-plotWavefunction = True
+plotWavefunction = False
 plotSpectral = True
 
 # Define parameters
@@ -18,16 +18,17 @@ t = 1
 delta = t
 mu = 1.6*t
 a = 1
-nr = 50
+nr = 80
 
 vecPotFunc = 'step-function'
-vecPotFunc = 'linear'
-#vecPotFunc = 'constant'
+#vecPotFunc = 'linear'
+vecPotFunc = 'constant'
 #vecPotFunc = 'tanh'
 if(vecPotFunc=='step-function'):
   A0 = 6 * np.pi / (3 * np.sqrt(3) * a)
   #A0 = 2*np.pi / a /2
   A0 = 2*np.pi / (3 * np.sqrt(3) * a)
+  A0 = 0.5*np.pi
 elif(vecPotFunc=='linear'):
   A0 = 8 * np.pi / (3 * np.sqrt(3) * a**2 * (2 * nr - 3) )
   #A0 = 8 * np.pi / (3 * np.sqrt(3) * a**2 )
@@ -79,7 +80,7 @@ bdg[n:2*n, n:2*n] = mu*np.eye(n)
 
 # Loop through the varying values of B for the vector potential
 nE = 2*2 # must be even?
-nk = 45
+nk = 2*60
 Amults = int(2)
 Amax = Amults * A0
 if(Amults>1):
@@ -102,7 +103,7 @@ for k,values in enumerate(avals):
   # Construct the BdG Hamiltonian for varying vector potential strengths bvalues
   for j in range(len(nnlist)):
     for nnl, l in enumerate(nnlist[j]):
-      phiftr = htm.calc_phi(a, coords[j,0], coords[l,0], coords[j,1], coords[l,1], nnphiParams[j][nnl][0], nnphiParams[j][nnl][1], 0, vecPotFunc)
+      phiftr = htm.calc_phi(a, coords[j,0], coords[l,0], coords[j,1], coords[l,1], nnphiParams[j][nnl][0], nnphiParams[j][nnl][1], 0*np.pi/2, vecPotFunc)
       bdg[j, l] = -t * np.exp(1.0j * phiftr * values)
       bdg[j+n, l+n] = -np.conjugate(bdg[j, l])
 
@@ -111,7 +112,7 @@ for k,values in enumerate(avals):
   eva[:,k] = eng[n-nE:n+nE]
   evaa[k] = eng[n]
   vec = np.real(np.multiply(vec, np.conj(vec)))
-  wf[:,k] = vec[0:n,n] + vec[n:2*n,n] + vec[0:n,n+1] + vec[n:2*n,n+1]
+  wf[:,k] = vec[0:n,n] + vec[n:2*n,n] + vec[0:n,n-1] + vec[n:2*n,n-1]
 
   # Let's only plot the wavefunction of the states if we have a MF or MF-like state for a given vector potential strength
 

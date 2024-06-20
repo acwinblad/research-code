@@ -18,7 +18,7 @@ pi = np.pi
 
 # System parameters
 a = 0.56E-9 # GaAs/AlGaAs: a = 0.56nm
-a = 10e-9 # [m]
+#a = 1e-9 # [m]
 m = 0.067 * m_e # GaAs/AlGaAs: m = 0.067m_e
 m = 1.0 * m_e # [MeV/c^2]
 h = hbar**2 / (2 * m * a**2) # hopping value for square lattice
@@ -27,35 +27,35 @@ k = 0 # Momentum space momentum value
 ka = k*a
 
 # Laser parameters
-Bmax = 25 # [T=Vs/m^2]
+Bmax = 1*pi*hbar/a**2 # [T=Vs/m^2]
 
 # Matrix cutoffs
 # Size of system in x direction
-rc = 5
+rc = 35
 xm = rc*a
 Nr = 2*rc+1
 xj = np.linspace(-xm, xm, Nr)
 
 # Range of Electric field strength and
-phimin = 0
+phimin = Bmax/hbar/25
 phimax = 1e8 # unitless
-phimax = Bmax*a**2/hbar # unitless
-nphi = 100
+phimax = Bmax/hbar/20 # unitless
+nphi = 1*100
 phi0 = np.linspace(phimin,phimax,nphi)
 
 # Create empty arrays
 energy = np.zeros( (Nr, nphi) )
 #energy = np.zeros( (Nr, nphi) )
-Adotdl = (xj+a/2) / (2*a)
+Adotdl = a*xj
 
 # For loop over the phi0 terms
 for i, phi in enumerate(phi0):
 
-  H = -2*h*np.diag(np.cos(ka-phi*Adotdl), k=0) - h*np.diag(np.exp(-1.0j*phi*Adotdl[:-1]),k=-1)
-
+  H = -2*h*np.diag(np.cos(ka-phi*Adotdl), k=0) - h*np.diag(np.ones(Nr-1),k=-1)
 
   #eng = np.linalg.eigvalsh(Q, UPLO = 'L')
   eng, vec = np.linalg.eigh(H, UPLO = 'L')
+  vec = np.real(np.multiply(vec, vec.conj()))
   energy[:,i] = eng
   #energy[:,i] = eng[mc*Nr:(mc+1)*Nr]
   np.savetxt('./data/eigenstate-phi-%03i.txt' % (i), vec, fmt = '%1.8f')

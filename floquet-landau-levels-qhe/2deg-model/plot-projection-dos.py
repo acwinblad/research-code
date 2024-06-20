@@ -14,7 +14,7 @@ filepath = './data/'
 config = np.loadtxt('./data/config.txt')
 rc = int(config[0])
 mc = int(config[1])
-h = float(config[2])
+t = float(config[2])
 phimin = float(config[3])
 phimax = float(config[4])
 nphi = int(config[5])
@@ -29,15 +29,20 @@ mf = (mc+1)*nr
 # load calculated values and states
 energy = np.loadtxt(filepath+'eng-matrix.txt')
 stateslist = sorted( glob.glob( filepath+'eigenstate-phi-*.txt') )
+bottombandproj = np.loadtxt(filepath+'bottom-band-projector.txt')
 
 # calculate weight/projection on 0th order Block
 weight = np.zeros( (nphi, nr*nm) )
+bottomweight = np.zeros( (nphi, nr*nm) )
 for i, statefilename in enumerate(stateslist):
   #states = np.loadtxt( statefilename, dtype=complex, skiprows=m0, max_rows=nr )
   states = np.loadtxt( statefilename, dtype = complex)
   tmp = np.real(np.matmul( states.conj().T, states ))
+  tmp2 = np.real(np.matmul( states.conj().T, bottombandproj))
+  tmp2 = np.real(np.matmul( tmp2, states))
   #print(tmp)
   weight[i,:] = np.diag( tmp, k=0 )
+  bottomweight[i,:] = np.diag( tmp2, k=0 )
   #weight[i,:] = np.diag( states, k=0 )
 
 #wavg = np.average(weight)
@@ -52,8 +57,8 @@ for i, statefilename in enumerate(stateslist):
 #weight[weight>=threshold] = 1
 
 # calculate a weighted/projected density of states as a function of phi
-Emax = +0.0*h
-Emin = -4.0*h
+Emax = -3.0*t
+Emin = -4.0*t
 nE = 400
 dE = (Emax - Emin)/(nE-1)
 #E = np.array([i*dE+Emin for i in range(nE)])
@@ -61,24 +66,29 @@ E = np.arange(0,nE)*dE+Emin
 
 # place weighted eigenvalues in an energy box-bin (also a normal dos)
 wE = np.zeros((nE,nphi))
+bwE = np.zeros((nE,nphi))
 gE = np.zeros((nE,nphi))
 gausgE = np.zeros((nE,nphi))
 gauswE = np.zeros((nE,nphi))
+gausbwE = np.zeros((nE,nphi))
 sigma = dE
 sig2 = sigma**2
 norm = (sigma*np.sqrt(np.pi))**(-1)
 
 for i in range(nphi):
   #eidx = np.where(np.logical_and(energy[:,i]>=Emin, energy[:,i]<=Emax))[0]
-  gausgE[i,0] = norm*np.sum(np.exp( -(E[0] - energy[:,i])**2 / sig2))
-  gauswE[i,0] = norm*np.sum(weight[i,:]*np.exp( -(E[0] - energy[:,i])**2 / sig2))
+  gausgE[0,i] = norm*np.sum(np.exp( -(E[0] - energy[:,i])**2 / sig2))
+  gauswE[0,i] = norm*np.sum(weight[i,:]*np.exp( -(E[0] - energy[:,i])**2 / sig2))
+  gausbwE[0,i] = norm*np.sum(bottomweight[i,:]*np.exp( -(E[0] - energy[:,i])**2 / sig2))
   for j in range(nE-1):
     #idx = np.where(np.logical_and(energy[eidx,i]>E[j],energy[eidx,i]<E[j+1]))[0]
     idx = np.where(np.logical_and(energy[:,i]>=E[j],energy[:,i]<E[j+1]))[0]
     wE[j+1, i] = np.sum(weight[i,idx])
+    bwE[j+1, i] = np.sum(bottomweight[i,idx])
     gE[j+1, i] = np.size(idx)
     gausgE[j+1, i] = norm*np.sum(np.exp( -(E[j+1] - energy[:,i])**2 / sig2))
     gauswE[j+1, i] = norm*np.sum(weight[i,:]*np.exp( -(E[j+1] - energy[:,i])**2 / sig2))
+    gausbwE[j+1, i] = norm*np.sum(bottomweight[i,:]*np.exp( -(E[j+1] - energy[:,i])**2 / sig2))
 
 #wE[wE!=0]=1
 # setup plot for weighted density of states
@@ -105,20 +115,26 @@ ax.set_ylabel('$Energy\ (eV)$')
 
 # plot and save figures
 # normal dos
-img = ax.imshow( gE[1:]**(1.0), interpolation='spline16', cmap='inferno_r', extent=[X.min(), X.max(), Y.min(), Y.max()], aspect='auto')
+img = ax.imshow( gE[1:]**(1.0), origin='lower', interpolation='spline16', cmap='inferno_r', extent=[X.min(), X.max(), Y.min(), Y.max()], aspect='auto')
 plt.savefig('./figures/dos-full.pdf', bbox_inches='tight')
 
 # proj dos
-img = ax.imshow( wE[1:]**(1.0), interpolation='nearest', cmap='inferno_r', extent=[X.min(), X.max(), Y.min(), Y.max()], aspect='auto')
-#ax.plot(x,y, 'k.')
-#plt.plot(x,y, 'k--')
+img = ax.imshow( wE[1:]**(1.0), origin='lower', interpolation='nearest', cmap='inferno_r', extent=[X.min(), X.max(), Y.min(), Y.max()], aspect='auto')
 plt.savefig('./figures/dos-projection.pdf', bbox_inches='tight')
 
+# proj bottom dos
+img = ax.imshow( bwE[1:]**(1.0), origin='lower', interpolation='nearest', cmap='inferno_r', extent=[X.min(), X.max(), Y.min(), Y.max()], aspect='auto')
+plt.savefig('./figures/dos-projection-bottom.pdf', bbox_inches='tight')
+
 # gaussian dos
-img = ax.imshow( gausgE**(1.0), interpolation='spline16', cmap='inferno_r', extent=[X.min(), X.max(), Y.min(), Y.max()], aspect='auto')
-plt.savefig('./figures/dos-gauss.pdf', bbox_inches='tight')
+img = ax.imshow( gausgE**(1.0), origin='lower', interpolation='spline16', cmap='inferno_r', extent=[X.min(), X.max(), Y.min(), Y.max()], aspect='auto')
+plt.savefig('./figures/dos-full-gaussian.pdf', bbox_inches='tight')
 
 # projected gaussian dos
-img = ax.imshow( gauswE**(1.0), interpolation='spline16', cmap='inferno_r', extent=[X.min(), X.max(), Y.min(), Y.max()], aspect='auto')
-plt.savefig('./figures/dos-gauss-projection.pdf', bbox_inches='tight')
+img = ax.imshow( gauswE**(1.0), origin='lower', interpolation='spline16', cmap='inferno_r', extent=[X.min(), X.max(), Y.min(), Y.max()], aspect='auto')
+plt.savefig('./figures/dos-projection-gaussian.pdf', bbox_inches='tight')
+
+# projected gaussian bottom dos
+img = ax.imshow( gausbwE**(1.0), origin='lower', interpolation='spline16', cmap='inferno_r', extent=[X.min(), X.max(), Y.min(), Y.max()], aspect='auto')
+plt.savefig('./figures/dos-projection-gaussian-bottom.pdf', bbox_inches='tight')
 

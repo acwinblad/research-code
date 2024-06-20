@@ -60,7 +60,7 @@ ka = k*a
 
 # hopping parameter in eV
 t = hbar**2 / (2 * a**2 * m)
-t = 1.0E1
+t = 1.0E-1
 m = hbar**2 / (2 * t * a**2)
 
 # Electric field and phi_0
